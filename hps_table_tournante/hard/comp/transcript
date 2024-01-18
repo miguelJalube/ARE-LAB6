@@ -1,0 +1,72 @@
+# //  Questa Sim-64
+# //  Version 2020.1_1 linux_x86_64 Mar  4 2020
+# //
+# //  Copyright 1991-2020 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  QuestaSim and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+do ../script/run_avalon_sim.tcl
+# QuestaSim-64 vmap 2020.1_1 Lib Mapping Utility 2020.03 Mar  4 2020
+# vmap work work 
+# Copying /opt/mentor/questasim/linux_x86_64/../modelsim.ini to modelsim.ini
+# Modifying modelsim.ini
+# QuestaSim-64 vcom 2020.1_1 Compiler 2020.03 Mar  4 2020
+# Start time: 11:23:57 on Jan 12,2024
+# vcom -reportprogress 300 -2008 -work work ../src/avl_user_interface.vhd 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Loading package NUMERIC_STD
+# -- Compiling entity avl_user_interface
+# -- Compiling architecture rtl of avl_user_interface
+# ** Error: (vcom-11) Could not find work.top_gen.
+# ** Error (suppressible): ../src/avl_user_interface.vhd(86): (vcom-1195) Cannot find expanded name "work.top_gen".
+# ** Error: ../src/avl_user_interface.vhd(86): (vcom-1105) Name (indexed name) does not denote an entity name.
+# ** Error: ../src/avl_user_interface.vhd(86): Unknown expanded name.
+# ** Error: ../src/avl_user_interface.vhd(128): (vcom-1220) Integer divide by zero.
+# ** Error: ../src/avl_user_interface.vhd(267): Signal "reg_pos_pres_s" is type ieee.NUMERIC_STD.UNSIGNED; expecting type ieee.std_logic_1164.STD_LOGIC_VECTOR.
+# ** Warning: ../src/avl_user_interface.vhd(239): (vcom-1272) Length of expected is 7; length of slice name is 8.
+# ** Note: ../src/avl_user_interface.vhd(274): VHDL Compiler exiting
+# End time: 11:23:57 on Jan 12,2024, Elapsed time: 0:00:00
+# Errors: 6, Warnings: 1
+# ** Error: /opt/mentor/questasim/linux_x86_64/vcom failed.
+# Error in macro ./../script/run_avalon_sim.tcl line 7
+# /opt/mentor/questasim/linux_x86_64/vcom failed.
+#     while executing
+# "vcom -reportprogress 300 -2008 -work work   ../src/avl_user_interface.vhd"
+do ../script/run_avalon_sim.tcl
+# ** Warning: (vlib-34) Library already exists at "work".
+# QuestaSim-64 vmap 2020.1_1 Lib Mapping Utility 2020.03 Mar  4 2020
+# vmap work work 
+# Modifying modelsim.ini
+# QuestaSim-64 vcom 2020.1_1 Compiler 2020.03 Mar  4 2020
+# Start time: 11:25:19 on Jan 12,2024
+# vcom -reportprogress 300 -2008 -work work ../src/avl_user_interface.vhd ../src/top_gen.vhd 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Loading package NUMERIC_STD
+# -- Compiling entity avl_user_interface
+# -- Compiling architecture rtl of avl_user_interface
+# ** Error: (vcom-11) Could not find work.top_gen.
+# ** Error (suppressible): ../src/avl_user_interface.vhd(86): (vcom-1195) Cannot find expanded name "work.top_gen".
+# ** Error: ../src/avl_user_interface.vhd(86): (vcom-1105) Name (indexed name) does not denote an entity name.
+# ** Error: ../src/avl_user_interface.vhd(86): Unknown expanded name.
+# ** Error: ../src/avl_user_interface.vhd(128): (vcom-1220) Integer divide by zero.
+# ** Error: ../src/avl_user_interface.vhd(267): Signal "reg_pos_pres_s" is type ieee.NUMERIC_STD.UNSIGNED; expecting type ieee.std_logic_1164.STD_LOGIC_VECTOR.
+# ** Warning: ../src/avl_user_interface.vhd(239): (vcom-1272) Length of expected is 7; length of slice name is 8.
+# ** Note: ../src/avl_user_interface.vhd(274): VHDL Compiler exiting
+# End time: 11:25:20 on Jan 12,2024, Elapsed time: 0:00:01
+# Errors: 6, Warnings: 1
+# ** Error: /opt/mentor/questasim/linux_x86_64/vcom failed.
+# Error in macro ./../script/run_avalon_sim.tcl line 7
+# /opt/mentor/questasim/linux_x86_64/vcom failed.
+#     while executing
+# "vcom -reportprogress 300 -2008 -work work   ../src/avl_user_interface.vhd ../src/top_gen.vhd"

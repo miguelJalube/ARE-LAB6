@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "axi_lw.h"
 #include "exceptions.h"
+#include "hps_interface.h"
 
 #define ID_ADDR             AXI_LW_REG(0)
 #define N_HEX               4
@@ -34,32 +35,17 @@
 int __auto_semihosting;
 
 int main(void){
-    set_A9_IRQ_stack();
+    //set_A9_IRQ_stack();
 
     // Config gic
-    config_GIC();
+    //config_GIC();
 
-    enable_A9_interrupts();
-
-    // Initialize leds, switches, keys and 7-segments
-    Leds_init();
-    Switchs_init();
-    Keys_init();
-    Segs7_init();
-
-    // Turn off al leds
-    Leds_clear(0x3ff);
-
-    // Seg7 0 to 3 display 0
-    for (size_t i = 0; i < N_HEX; i++)
-    {
-        Seg7_write_hex(i, 0);
-    }
+    //enable_A9_interrupts();
 
     // Display ID constant
-    printf("[main] ID : %#X\n", (unsigned)ID_ADDR);
-
     printf("Laboratoire: Commande Table tournante \n");
+    printf("[main] ID : %#X\n", (unsigned)ID_ADDR);
+    printf("IT constant ID : %#X\n", get_constant());
     
     // TO BE COMPLETE
 
