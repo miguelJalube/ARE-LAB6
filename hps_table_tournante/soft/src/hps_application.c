@@ -30,9 +30,18 @@
 #include "hps_interface.h"
 
 #define ID_ADDR             AXI_LW_REG(0)
-#define N_HEX               4
+#define N_HEX               6
+#define N_KEYS              4
 
 int __auto_semihosting;
+
+// Update pressed keys
+void update_pressed(bool *pressed, size_t size){
+    int i;
+    for(i = 0; i< size; i++){
+        pressed[i] = Key_read(i);
+    }
+}
 
 int main(void){
     //set_A9_IRQ_stack();
@@ -46,7 +55,60 @@ int main(void){
     printf("Laboratoire: Commande Table tournante \n");
     printf("[main] ID : %#X\n", (unsigned)ID_ADDR);
     printf("IT constant ID : %#X\n", get_constant());
-    
-    // TO BE COMPLETE
 
+    /* Set Default values on LEDS and hex display */
+    Leds_set(0x0);
+
+    /* set our base mode based on switches */
+    uint32_t switches;
+    uint32_t keys_value, old_keys_value;
+
+    // Which key is pressed
+    bool pressed[N_KEYS] = {false, false, false, false};
+
+    // Edge detection for keys
+    bool pressed_edge[N_KEYS] = {false, false, false, false};
+    
+    // Main program loop
+    while(1){
+        // Update key pressed state 2
+        update_pressed(pressed_edge, N_KEYS);
+
+        if(!pressed[0] && pressed_edge[0]){
+            #ifdef DEBUG
+                printf("[main] KEY0 pressed\n");
+            #endif
+
+        }
+        pressed[0] = pressed_edge[0];
+
+        if(!pressed[1] && pressed_edge[1]){
+            #ifdef DEBUG
+                printf("[main] KEY1 pressed\n");
+            #endif
+
+            // Key 1 pressed
+        
+        }
+        pressed[1] = pressed_edge[1];
+
+        if(!pressed[2] && pressed_edge[2]){
+            #ifdef DEBUG
+                printf("[main] KEY2 pressed\n");
+            #endif
+
+            // Key 2 pressed
+
+        }
+        pressed[2] = pressed_edge[2];
+
+        if(!pressed[3] && pressed_edge[3]){
+            #ifdef DEBUG
+                printf("[main] KEY3 pressed\n");
+            #endif
+            // Key 3 pressed
+            
+        }
+        pressed[3] = pressed_edge[3];
+    }
 }
