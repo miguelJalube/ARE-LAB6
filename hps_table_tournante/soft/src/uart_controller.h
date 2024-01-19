@@ -62,13 +62,7 @@
 int uart_init();
 
 /**
- * @brief send an 8 bit data to the uart controller
+ * @brief send an 8 bit data to PC
  * @param data the data to send
 */
 void uart_send(uint8_t data);
-
-/**
- * @brief check if the uart controller is ready to send
- * @return true if ready, false if not
-*/
-bool uart_tx_fifo_full();

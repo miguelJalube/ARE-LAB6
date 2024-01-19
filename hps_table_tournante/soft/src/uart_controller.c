@@ -64,6 +64,16 @@ bool uart_tx_fifo_full(){
     return res;
 }
 
+bool uart_rx_fifo_full(){
+    bool res = (bool)(UART0_REG(LSR_OFFSET) & 0x10);
+    return res;
+}
+
 void uart_send(uint8_t data){
     UART0_REG(RBR_THR_DLL_OFFSET) = data & 0xFF;
+}
+
+uint32_t uart_receive(){
+    uint32_t data = UART0_REG(RBR_THR_DLL_OFFSET);
+    return data;
 }

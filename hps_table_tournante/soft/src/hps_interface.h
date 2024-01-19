@@ -56,19 +56,14 @@
 #define SEG7_BITS           0x0FFFFFFF
 #define SEG7_BITS_HEX       0x7F
 
-#define SWITCHS_OFFSET      0
-#define LEDS_OFFSET         10
-#define KEY_OFFSET          20
-#define INT_MASK_OFFSET     2
-#define EDGE_CAPT_OFFSET    3
-
-#define HEX0_OFFSET         0
-#define HEX1_OFFSET         7
-#define HEX2_OFFSET         14
-#define HEX3_OFFSET         28
-
 //***********************************//
 //****** Global usage function ******//
+
+/**
+* @brief Read the constant id value
+* @return Value of the constant id
+*/
+uint32_t get_constant(void);
 
 // Switchs_read function : Read the switchs value
 // Parameter : None
@@ -104,7 +99,7 @@ bool Key_read(int key_number);
 // Parameter : "seg7_number"= select the 7-segments number, from 0 to 3
 // Parameter : "value"= digit segment value to be applied on the selected 7-segments (maximum 0x7F to switch ON all segments)
 // Return : None
-void Seg7_write(int seg7_number, uint32_t value);
+void Seg7_write(int seg7_number, uint8_t value);
 
 // Seg7_write_hex function : Write an Hexadecimal value to one 7-segments display (HEX0 or HEX1 or HEX2 or HEX3)
 // Parameter : "seg7_number"= select the 7-segments number, from 0 to 3
@@ -112,3 +107,4 @@ void Seg7_write(int seg7_number, uint32_t value);
 // Return : None
 void Seg7_write_hex(int seg7_number, uint32_t value);
 
+#endif

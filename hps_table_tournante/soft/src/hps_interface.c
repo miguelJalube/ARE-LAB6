@@ -26,9 +26,15 @@
 
 #include "hps_interface.h"
 
+#define DEBUG_ITF 1
+
+uint32_t get_constant(void){
+    return ITF_REG(CONSTANT_ID_OFFSET);
+}
+
 uint32_t Switchs_read(void){
     // Read data register and mask with SWITCHS_BITS
-    uint32_t value = ITF_REG(DATA) & SWITCHS_BITS;
+    uint32_t value = ITF_REG(SWITCHS_OFFSET);
     return value;
 }
 
@@ -72,7 +78,7 @@ bool Key_read(int key_number){
         return;
     }
     // Read data register and mask with KEYS_BITS
-    uint32_t value = ITF_REG(KEY_OFFSET);
+    uint32_t value = ITF_REG(BUTTON_OFFSET);
 
     // Shift the mask to the key_number position
     uint32_t mask = 1 << key_number;

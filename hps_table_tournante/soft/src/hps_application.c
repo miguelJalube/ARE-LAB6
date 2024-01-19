@@ -28,6 +28,9 @@
 #include "axi_lw.h"
 #include "exceptions.h"
 #include "hps_interface.h"
+#include "uart_controller.h"
+
+#define DEBUG 1
 
 #define ID_ADDR             AXI_LW_REG(0)
 #define N_HEX               6
@@ -51,13 +54,17 @@ int main(void){
 
     //enable_A9_interrupts();
 
+    uart_init();
+
     // Display ID constant
     printf("Laboratoire: Commande Table tournante \n");
-    printf("[main] ID : %#X\n", (unsigned)ID_ADDR);
-    printf("IT constant ID : %#X\n", get_constant());
+    printf("[main] ID : 				%#X\n", (unsigned)ID_ADDR);
+    printf("[main] IT constant ID : 	%#X\n", get_constant());
 
     /* Set Default values on LEDS and hex display */
     Leds_set(0x0);
+
+    Leds_set(0xFF);
 
     /* set our base mode based on switches */
     uint32_t switches;
@@ -74,10 +81,14 @@ int main(void){
         // Update key pressed state 2
         update_pressed(pressed_edge, N_KEYS);
 
+
         if(!pressed[0] && pressed_edge[0]){
             #ifdef DEBUG
                 printf("[main] KEY0 pressed\n");
+                switches = Switchs_read();
+                uart_send(switches);
             #endif
+            
 
         }
         pressed[0] = pressed_edge[0];
