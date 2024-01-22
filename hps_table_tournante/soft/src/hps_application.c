@@ -70,6 +70,10 @@ int main(void){
     uint32_t switches;
     uint32_t keys_value, old_keys_value;
 
+    uint16_t current_pos = 0;
+    uint16_t init_pos = 0;
+    uint32_t auto_steps = 0;
+
     // Which key is pressed
     bool pressed[N_KEYS] = {false, false, false, false};
 
@@ -90,10 +94,24 @@ int main(void){
             
             if((switches && 0x001) != 0){
                 // If SW0 = 1
+                // Débuter la séquence de calibration de la position initiale.
 
+                // Write msg to uart
+                Cal_write(0x1);
+                En_pap_write(0x1);
+                while(Busy_read() != 0);
+                current_pos = Pos_read();
+                // Write msg to uart
             }else{
                 // If SW0 = 0
+                // Débuter la séquence d’initialisation (prise d'index).
 
+                // Write msg to uart
+                Init_write(0x1);
+                En_pap_write(0x1);
+                while(Busy_read() != 0);
+                current_pos = init_pos = Pos_read();
+                // Write msg to uart
             }
         }
         pressed[0] = pressed_edge[0];
@@ -104,6 +122,12 @@ int main(void){
             #endif
 
             // Key 1 pressed
+            if((switches && 0x002) != 0){
+                // If SW1 = 1
+                // Automatic mode
+            }else{
+                En_pap_write(0x1);
+            }
         
         }
         pressed[1] = pressed_edge[1];
