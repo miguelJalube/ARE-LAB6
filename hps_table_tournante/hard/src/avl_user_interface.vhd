@@ -83,11 +83,18 @@ architecture rtl of avl_user_interface is
       top_o   : out std_logic
     );
   end component top_gen;
-  for all                              : top_gen use entity work.top_gen(calc);
+  for all : top_gen use entity work.top_gen(calc);
 
   --| Constants declarations |--------------------------------------------------------------
-  constant AVL_BUS_PERIOD              : integer                                := 20; -- 50MHz => 20ns
-  constant TOP_BASE_PERIOD             : integer                                := 10000000;    -- 10ms
+  type cal_state_t is (
+    WAITING,
+    CAPT_SUP,
+    IDX,
+    GET_INIT_POS
+  );
+
+  constant AVL_BUS_PERIOD              : integer                                := 20;       -- 50MHz => 20ns
+  constant TOP_BASE_PERIOD             : integer                                := 10000000; -- 10ms
 
   constant INTERFACE_ID                : std_logic_vector(avl_readdata_o'range) := x"DEADBEEF";
   constant READ_NOT_USED               : std_logic_vector(avl_readdata_o'range) := x"DDEEAADD";
@@ -119,6 +126,15 @@ architecture rtl of avl_user_interface is
   signal reg_pos_fut_s                 : unsigned(15 downto 0);
   signal dir_s                         : std_logic;
   signal en_pap_s                      : std_logic;
+  signal t_idx_s                       : std_logic;
+  signal t_capt_sup_s                  : std_logic;
+  signal run_cal_s                     : std_logic;
+  signal run_init_s                    : std_logic;
+  signal cal_init_busy_s               : std_logic;
+  signal mem_pos_cal_s                 : std_logic;
+  signal pos_init_s                    : unsigned(15 downto 0);
+  signal stop_pap_s                    : std_logic;
+  signal cur_state_s, fut_state_s      : cal_state_t;
 
 begin
 
@@ -136,12 +152,12 @@ begin
 
   -- Top frequency divider -----------------------------------------------------------------------------------------------------
   freq_div_s    <= to_unsigned(10, freq_div_s'length) when speed_s = "00" else to_unsigned(4, freq_div_s'length) when speed_s = "01" else to_unsigned(2, freq_div_s'length) when speed_s = "10" else to_unsigned(1, freq_div_s'length) when speed_s = "11";
-  top_cpt_fut_s <= top_cpt_pres_s when top_10ms_s = '0' else top_cpt_pres_s - 1 when top_cpt_pres_s < 0 else freq_div_s;
+  top_cpt_fut_s <= top_cpt_pres_s when top_10ms_s = '0' else top_cpt_pres_s - 1 when top_cpt_pres_s /= 0 else freq_div_s;
 
   process (avl_reset_i, avl_clk_i)
   begin
     if avl_reset_i = '1' then
-      top_cpt_pres_s <= (others => '0');
+      top_cpt_pres_s <= freq_div_s;
     elsif rising_edge(avl_clk_i) then
       top_cpt_pres_s <= top_cpt_fut_s;
     end if;
@@ -159,6 +175,16 @@ begin
     elsif rising_edge(avl_clk_i) then
       t_inc_pos_s <= t_inc_pos_i;
       t_dec_pos_s <= t_dec_pos_i;
+
+      cur_state_s <= fut_state_s;
+      if mem_pos_cal_s = '1' then
+        if run_cal_s = '1' then
+          pos_init_s <= reg_pos_pres_s;
+        elsif run_init_s = '1' then
+          reg_pos_pres_s <= pos_init_s;
+        end if;
+      end if;
+
     end if;
   end process;
   -------------------------------------------------------------------------------------------------------------------------------
@@ -201,6 +227,8 @@ begin
 
           when 7      => avl_readdata_s(3 downto 0)                                                           <= speed_s & dir_s & en_pap_s;
 
+          when 8      => avl_readdata_s(0)                                                                    <= cal_init_busy_s;
+
           when others => avl_readdata_s                                                                  <= READ_NOT_USED;
         end case;
       end if;
@@ -219,6 +247,7 @@ begin
       hex3_s   <= (others => '0');
       hex4_s   <= (others => '0');
       hex5_s   <= (others => '0');
+      speed_s  <= "00";
       dir_s    <= '0';
       en_pap_s <= '0';
 
@@ -244,11 +273,52 @@ begin
             dir_s                    <= avl_writedata_i(1);
             en_pap_s                 <= avl_writedata_i(0);
 
+          when 8 => run_cal_s      <= avl_writedata_i(0);
+            => run_init_s            <= avl_writedata_i(1);
+
           when others => null;
         end case;
       end if;
     end if;
   end process write_channel;
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- MSS for calibration part ---------------------------------------------------------------------------------------------------
+  cal_mss : process (run_cal_s, run_init_s, t_capt_sup_s, t_idx_s)
+  begin
+    -- Default value
+    cal_init_busy_s <= '0';
+    mem_pos_cal_s   <= '0';
+    stop_pap_s      <= '0';
+    fut_state_s     <= WAITING;
+
+    case cur_state_s is
+      when WAITING =>
+        if run_cal_s = '1' or run_init_s = '1' then
+          fut_state_s <= CAPT_SUP;
+        end if;
+
+      when CAPT_SUP =>
+        cal_init_busy_s <= '1';
+        if t_capt_sup_s = '1' then
+          fut_state_s <= IDX;
+        end if;
+
+      when IDX =>
+        if t_idx_s = '1' then
+          fut_state_s <= GET_INIT_POS;
+        end if;
+
+      when GET_INIT_POS =>
+        fut_state_s   <= WAITING;
+        stop_pap_s    <= '1';
+        mem_pos_cal_s <= '1';
+
+      when others =>
+        fut_state_s <= WAITING;
+
+    end case;
+  end process cal_mss;
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- Interface management
@@ -266,7 +336,7 @@ begin
   -- Turnnig table
   t_position_o        <= std_logic_vector(reg_pos_pres_s);
   t_dir_pap_o         <= dir_s;
-  t_enable_pap_o      <= en_pap_s;
+  t_enable_pap_o      <= '0' when stop_pap_s = '1' else en_pap_s;
   t_top_pap_o         <= top_pap_s;
   -- Unused
   avl_waitrequest_o   <= '0';
