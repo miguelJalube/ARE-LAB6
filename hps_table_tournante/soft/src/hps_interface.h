@@ -36,13 +36,48 @@
 #define LEDS_OFFSET         0xC
 #define HEX_03_OFFSET       0x10
 #define HEX_45_OFFSET       0x14
+
+/**
+ *  Bits       |        R |        W |
+ * ------------|----------|----------|
+ *  [31 .. 16] |        0 | not used |
+ *  [15 ..  0] |  val_pos |  val_pos |
+ * ------------|----------|----------|
+ */
 #define RESERVED1_OFFSET    0x18
+
+/**
+ *  Bits       |        R |        W |
+ * ------------|----------|----------|
+ *  [31 ..  4] |        0 | not used |
+ *  [ 3 ..  2] |    speed |    speed |
+ *         [1] |      dir |      dir |
+ *         [0] |   en_pap |   en_pap |
+ * ------------|----------|----------|
+ */
 #define RESERVED2_OFFSET    0x1C
+
+/**
+ *  Bits       |        R |        W |
+ * ------------|----------|----------|
+ *  [31 ..  2] |        0 | not used |
+ *         [1] | not used | run_init |
+ *         [0] | cal_busy |  run_cal |
+ * ------------|----------|----------|
+ */
 #define RESERVED3_OFFSET    0x20
 
 #define MASK_BUTTON         0xf
 #define MASK_SWITCH         0x3ff
 #define MASK_LED            0x3ff
+
+// Define bits usage
+#define POS_BITS            0xff
+#define SPEED_BITS          0x0c
+#define DIR_BITS            0x02
+#define EN_PAP_BITS         0x01
+#define INIT_BITS           0x02
+#define CAL_BITS            0x01
 
 #define ITF_REG(_x_) *(volatile uint32_t *)(AXI_LW_HPS_FPGA_BASE_ADD + INTERFACE_OFFSET + _x_)
 
@@ -106,5 +141,52 @@ void Seg7_write(int seg7_number, uint8_t value);
 // Parameter : "value"= Hexadecimal value to be display on the selected 7-segments, form 0x0 to 0xF
 // Return : None
 void Seg7_write_hex(int seg7_number, uint32_t value);
+
+//***********************************//
+//****** Interface functions   ******//
+
+// Pos_read function : Reads the position of the disk
+// Return : Current disk position value
+uint32_t Pos_read();
+
+// Pos_write function : Writes the position of the disk
+// Parameter : "new_pos"= New position value to be applied to the disk
+void Pos_write(uint32_t new_pos);
+
+// Speed_read function : Reads the speed of the disk
+// Return : Current disk speed value
+uint32_t Speed_read();
+
+// Speed_write function : Writes the speed of the disk
+// Parameter : "new_speed"= New speed value to be applied to the disk
+void Speed_write(uint32_t new_speed);
+
+// Dir_read function : Reads the direction of the disk
+// Return : Current disk direction value
+uint32_t Dir_read();
+
+// Dir_write function : Writes the direction of the disk
+// Parameter : "new_dir"= New direction value to be applied to the disk
+void Dir_write(uint32_t new_dir);
+
+// En_pap_read function : Reads the step by step motor status
+// Return : 1 for enable, 0 for disable
+uint32_t En_pap_read();
+
+// En_pap_write function : Writes the step by step motor status
+// Parameter : "new_en_pap"= New step by step motor status value to be applied
+void En_pap_write(uint32_t new_en_pap);
+
+// Run_cal_write function : Writes the calibration status
+// Parameter : "new_run_cal"= New calibration status value to be applied
+void Cal_write(uint32_t new_cal_busy);
+
+// busy_read function : Reads the calibration busy status
+// Return : 1 for busy, 0 for not busy
+uint32_t Busy_read();
+
+// Run_init_write function : Writes the initialization status
+// Parameter : "new_run_init"= New initialization status value to be applied
+void Init_write(uint32_t new_run_init);
 
 #endif

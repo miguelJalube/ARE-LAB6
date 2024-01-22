@@ -81,15 +81,20 @@ int main(void){
         // Update key pressed state 2
         update_pressed(pressed_edge, N_KEYS);
 
+        switches = Switchs_read();
 
         if(!pressed[0] && pressed_edge[0]){
             #ifdef DEBUG
                 printf("[main] KEY0 pressed\n");
-                switches = Switchs_read();
-                uart_send(switches);
             #endif
             
+            if((switches && 0x001) != 0){
+                // If SW0 = 1
 
+            }else{
+                // If SW0 = 0
+
+            }
         }
         pressed[0] = pressed_edge[0];
 

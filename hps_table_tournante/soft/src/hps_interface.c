@@ -182,3 +182,68 @@ void Seg7_write(int seg7_number, uint8_t value){
 void Seg7_write_hex(int seg7_number, uint32_t value){
     Seg7_write(seg7_number, seg7_val(value));
 }
+
+
+//***********************************//
+//****** Interface functions  ******//
+
+uint32_t Pos_read(){
+    // Read data register and mask with POS_BITS
+    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && POS_BITS);
+    return value;
+}
+
+void Pos_write(uint32_t value){
+    // Write data register and mask with POS_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && POS_BITS);
+}
+
+uint32_t Speed_read(){
+    // Read data register and mask with SPEED_BITS
+    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && SPEED_BITS);
+    return value;
+}
+
+void Speed_write(uint32_t value){
+    // Write data register and mask with SPEED_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && SPEED_BITS);
+}
+
+uint32_t Dir_read(){
+    // Read data register and mask with DIR_BITS
+    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && DIR_BITS);
+    return value;
+}
+
+void Dir_write(uint32_t value){
+    // Write data register and mask with DIR_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && DIR_BITS);
+}
+
+void Init_write(uint32_t value){
+    // Write data register and mask with RUN_INIT_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && INIT_BITS);
+}
+
+uint32_t En_pap_read(){
+    // Read data register and mask with EN_PAP_BITS
+    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && EN_PAP_BITS);
+    return value;
+}
+
+void En_pap_write(uint32_t value){
+    // Write data register and mask with EN_PAP_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && EN_PAP_BITS);
+}
+
+void Cal_write(uint32_t value){
+    // Write data register and mask with RUN_CAL_BITS
+    ITF_REG(RESERVED1_OFFSET) = (value && CAL_BITS);
+}
+
+uint32_t Busy_read(){
+    // Read data register and mask with CAL_BUSY_BITS
+    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && CAL_BITS);
+    return value;
+}
+
