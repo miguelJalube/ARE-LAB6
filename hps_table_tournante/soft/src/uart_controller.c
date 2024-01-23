@@ -59,15 +59,21 @@ int uart_init(){
     UART0_REG(LCR_OFFSET) = lcr;
 }
 
-int uart_send(char * string, size_t size){
-    for (size_t i = 0; i < size; i++)
-    {
-        // Wait until THR is empty
-        UART0_REG(RBR_THR_DLL_OFFSET) = string[i] & 0xFF;
-    }
-    return 0;
+bool uart_tx_fifo_full(){
+    bool res = (bool)(UART0_REG(LSR_OFFSET) & 0x20);
+    return res;
 }
 
-int uart_receive(char **string, size_t size){
-    return 0;
+bool uart_rx_fifo_full(){
+    bool res = (bool)(UART0_REG(LSR_OFFSET) & 0x10);
+    return res;
+}
+
+void uart_send(uint8_t data){
+    UART0_REG(RBR_THR_DLL_OFFSET) = data & 0xFF;
+}
+
+uint32_t uart_receive(){
+    uint32_t data = UART0_REG(RBR_THR_DLL_OFFSET);
+    return data;
 }

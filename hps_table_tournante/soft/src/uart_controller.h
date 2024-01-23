@@ -40,6 +40,9 @@
 // Modem Control Register
 #define MCR_OFFSET          0x10
 
+// TX/RX STATUS
+#define LSR_OFFSET          0x14
+
 
 #define UART0_BAUDRATE      9600
 #define CLK_FREQ            100000000
@@ -59,15 +62,7 @@
 int uart_init();
 
 /**
- * @brief send a char to the uart controller
- * @param c the char to send
- * @return 0 if success, -1 if error
+ * @brief send an 8 bit data to PC
+ * @param data the data to send
 */
-int uart_send(char * string, size_t size);
-
-/**
- * @brief receive a char from the uart controller
- * @param c the char to receive
- * @return 0 if success, -1 if error
-*/
-int uart_receive(char **string, size_t size);
+void uart_send(uint8_t data);
