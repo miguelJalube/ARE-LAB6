@@ -44,25 +44,7 @@
 
 int __auto_semihosting;
 
-static const char message = "
-    [KEY0] => Init or calibration sequence\n
-    [KEY1] => Enable motor (Auto or manual)\n
-    [KEY2] => Show initial position\n
-    [KEY3] => not used\n
-    [SW0] => 0 for calibration, 1 for initialisation\n
-    [SW1] => 0 for manual, 1 for automatic\n
-    [SW2] => 0 clockwise, 1 counter-clockwise\n
-    [SW3-4] => speed value : 00 for min speed, 11 for max speed\n
-    [SW5-8] => step number for automatic mode\n
-    [SW9] => not used\n
-    [LED0] => calibration done\n
-    [LED1] => auto-move in progress\n
-    [LED2] => manual-move in progress\n
-    [LED3] => limit exceeded\n
-    [LED4-6] => not used\n
-    [LED7] => IRQ\n
-    [7SEG] => Limits\n
-";
+static const char message[] = "[KEY0] => Init or calibration sequence\r\n[KEY1] => Enable motor (Auto or manual)\r\n[KEY2] => Show initial position\r\n[KEY3] => not used\r\n[SW0] => 0 for calibration, 1 for initialisation\r\n[SW1] => 0 for manual, 1 for automatic\r\n[SW2] => 0 clockwise, 1 counter-clockwise\r\n[SW3-4] => speed value : 00 for min speed, 11 for max speed\r\n[SW5-8] => step number for automatic mode\r\n[SW9] => not used\r\n[LED0] => calibration done\r\n[LED1] => auto-move in progress\r\n[LED2] => manual-move in progress\r\n[LED3] => limit exceeded\r\n[LED4-6] => not used\r\n[LED7] => IRQ\r\n[7SEG] => Limits\r\n";
 
 void fpga_ISR(void){
 	Leds_toggle(1 << 7);
@@ -77,6 +59,11 @@ void fpga_ISR(void){
 	// Set table for automatic move until arrow pos is reached
 	Speed_write(2);
 	Dir_write(current_dir);
+	Leds_set(1 << 3);
+	if(!current_dir)
+		Seg7_write(5, 0x48);
+	else
+		Seg7_write(5, 0x41);
 	// Launch auto move
 	Move_run();
 	// Ack
@@ -191,6 +178,8 @@ int main(void){
                 while(Move_busy_read()){
                 	display_pos();
                 }
+
+                Leds_set(1 << 0);
                 // Write msg to uart
                 uart_send_msg("Ending calibration sequence\n");
             }
@@ -243,10 +232,14 @@ int main(void){
             	Dir_write((switches & SWITCH_DIR) >> 2);
             	Speed_write((switches & SWITCH_SPEED) >> 3);
             	En_pap_write(1);
+            	Leds_set(1 << 2);
             	while(!pressed[1] && pressed_edge[1]){
             		update_pressed(pressed_edge, N_KEYS);
             		display_pos();
             	}
+            	Seg7_write(5, 0);
+            	Leds_clear(1 << 2);
+            	Leds_clear(1 << 3);
             	En_pap_write(0);
             }
             // Automatic depl
@@ -267,31 +260,17 @@ int main(void){
 
 				// Launch automatic move
 				Move_run();
+				Leds_set(1 << 1);
 				while(Move_busy_read()){
 					display_pos();
 				}
+				Seg7_write(5, 0);
+				Leds_clear(1 << 3);
+				Leds_clear(1 << 1);
             }
         
         }
         pressed[1] = pressed_edge[1];
 
-        /*if(!pressed[2] && pressed_edge[2]){
-            #ifdef DEBUG
-                printf("[main] KEY2 pressed\n");
-            #endif
-
-            // Key 2 pressed
-
-        }
-        pressed[2] = pressed_edge[2];
-
-        if(!pressed[3] && pressed_edge[3]){
-            #ifdef DEBUG
-                printf("[main] KEY3 pressed\n");
-            #endif
-            // Key 3 pressed
-            
-        }
-        pressed[3] = pressed_edge[3];*/
     }
 }
