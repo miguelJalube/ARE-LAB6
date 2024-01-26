@@ -81,13 +81,6 @@ void display_pos(){
 	}
 }
 
-void uart_send_msg(char * msg){
-    size_t i = 0;
-    while(msg[i] != '\0'){
-        uart_send(msg[i++]);
-    }
-}
-
 int main(void){
     // Variable declaration
     uint32_t switches;
