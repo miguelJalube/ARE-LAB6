@@ -81,6 +81,13 @@ void display_pos(){
 	}
 }
 
+void uart_send_msg(char * msg){
+    size_t i = 0;
+    while(msg[i] != '\0'){
+        uart_send(msg[i++]);
+    }
+}
+
 int main(void){
     // Variable declaration
     uint32_t switches;
@@ -141,6 +148,7 @@ int main(void){
             // Begin calibration sequence
             if(!(switches & SWITCH_CAL_INIT)){
                 // Write msg to uart
+                uart_send_msg("Starting calibration sequence\n");
 
             	// Preset before launching the calibration unitl idx is reached
                 Pos_write(ARROW_POS);
@@ -170,11 +178,13 @@ int main(void){
                 	display_pos();
                 }
                 // Write msg to uart
+                uart_send_msg("Ending calibration sequence\n");
             }
 
             // Begin initialisation sequence
             else{
                 // Write msg to uart
+                uart_send_msg("Starting initialisation sequence\n");
 
             	// Preset before launching the initialisation unitl idx is reached
             	Speed_write(0);
@@ -203,6 +213,7 @@ int main(void){
             		display_pos();
             	}
                 // Write msg to uart
+                uart_send_msg("Ending calibration sequence\n");
             }
         }
         pressed[0] = pressed_edge[0];
@@ -226,6 +237,8 @@ int main(void){
             }
             // Automatic depl
             else{
+                
+                uart_send_msg("Starting automatic deplacement\n");
             	 // Calculate destination pos
             	current_pos = Pos_read();
             	current_dir = (switches & SWITCH_DIR) >> 2;
