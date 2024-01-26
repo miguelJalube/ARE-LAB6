@@ -44,6 +44,26 @@
 
 int __auto_semihosting;
 
+static const char message = "
+    [KEY0] => Init or calibration sequence\n
+    [KEY1] => Enable motor (Auto or manual)\n
+    [KEY2] => Show initial position\n
+    [KEY3] => not used\n
+    [SW0] => 0 for calibration, 1 for initialisation\n
+    [SW1] => 0 for manual, 1 for automatic\n
+    [SW2] => 0 clockwise, 1 counter-clockwise\n
+    [SW3-4] => speed value : 00 for min speed, 11 for max speed\n
+    [SW5-8] => step number for automatic mode\n
+    [SW9] => not used\n
+    [LED0] => calibration done\n
+    [LED1] => auto-move in progress\n
+    [LED2] => manual-move in progress\n
+    [LED3] => limit exceeded\n
+    [LED4-6] => not used\n
+    [LED7] => IRQ\n
+    [7SEG] => Limits\n
+";
+
 void fpga_ISR(void){
 	Leds_toggle(1 << 7);
 	uint32_t limit = Limit_read();
@@ -123,6 +143,8 @@ int main(void){
     printf("Laboratoire: Commande Table tournante \n");
     printf("[main] ID : 				%#X\n", (unsigned)ID_ADDR);
     printf("[main] IT constant ID : 	%#X\n", get_constant());
+
+    uart_send_msg(message);
 
     // Main program loop
     while(1){
