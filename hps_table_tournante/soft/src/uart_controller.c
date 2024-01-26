@@ -79,7 +79,7 @@ uint32_t uart_receive(){
     return data;
 }
 
-void uart_send_msg(char * msg){
+void uart_send_msg(const char * msg){
     size_t i = 0;
     while(msg[i] != '\0'){
         uart_send(msg[i++]);

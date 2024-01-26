@@ -61,11 +61,11 @@ void fpga_ISR(void){
 	Dir_write(current_dir);
 	Leds_set(1 << 3);
 	if(!current_dir){
-		uart_send_msg("max\n");
+		uart_send_msg("Minimum reached\n\r");
 		Seg7_write(5, 0x48);
 	}
 	else{
-		uart_send_msg("min\n");
+		uart_send_msg("Max reached\n\r");
 		Seg7_write(5, 0x41);
 	}
 
@@ -83,14 +83,18 @@ void update_pressed(bool *pressed, size_t size){
     }
 }
 
-void display_pos(){
-	uint32_t pos = Pos_read(), rest;
+void display_pos(uint32_t pos){
+	uint32_t rest;
 	for(int i = 0; i < N_HEX - 1; ++i){
 		rest = pos % 10;
 		pos /= 10;
 
 		Seg7_write_hex(i, rest);
 	}
+}
+
+void display_current_pos(){
+	display_pos(Pos_read());
 }
 
 int main(void){
@@ -143,7 +147,7 @@ int main(void){
     	// Default actions when system in idle state
         update_pressed(pressed_edge, N_KEYS);
         switches = Switchs_read();
-        display_pos();
+        display_current_pos();
 
 
         // ========================== CAL & INIT ==========================
@@ -155,18 +159,18 @@ int main(void){
             // Begin calibration sequence
             if(!(switches & SWITCH_CAL_INIT)){
                 // Write msg to uart
-                uart_send_msg("Starting calibration sequence\n");
+                uart_send_msg("Starting calibration sequence\n\r");
 
             	// Preset before launching the calibration unitl idx is reached
                 Pos_write(ARROW_POS);
-                display_pos();
+                display_current_pos();
                 Speed_write(0);
                 Dir_write(1);
 
                 // Let the disc turn until it reaches idx
                 Cal_write();
                 while(Busy_read()){
-                	display_pos();
+                	display_current_pos();
                 }
 
                 // Save position as init_pos
@@ -182,18 +186,18 @@ int main(void){
                 // Launch automatic move
                 Move_run();
                 while(Move_busy_read()){
-                	display_pos();
+                	display_current_pos();
                 }
 
                 Leds_set(1 << 0);
                 // Write msg to uart
-                uart_send_msg("Ending calibration sequence\n");
+                uart_send_msg("Ending calibration sequence\n\r");
             }
 
             // Begin initialisation sequence
             else{
                 // Write msg to uart
-                uart_send_msg("Starting initialisation sequence\n");
+                uart_send_msg("Starting initialisation sequence\n\r");
 
             	// Preset before launching the initialisation unitl idx is reached
             	Speed_write(0);
@@ -202,7 +206,7 @@ int main(void){
             	// Let the disc go to the idx
             	Cal_write();
             	while(Busy_read()){
-            		display_pos();
+            		display_current_pos();
             	}
 
             	// Set the position to init_pos previously saved
@@ -218,10 +222,10 @@ int main(void){
             	// Launch auto move
             	Move_run();
             	while(Move_busy_read()){
-            		display_pos();
+            		display_current_pos();
             	}
                 // Write msg to uart
-                uart_send_msg("Ending calibration sequence\n");
+                uart_send_msg("Ending calibration sequence\n\r");
             }
         }
         pressed[0] = pressed_edge[0];
@@ -240,7 +244,7 @@ int main(void){
             	Leds_set(1 << 2);
             	while(!pressed[1] && pressed_edge[1]){
             		update_pressed(pressed_edge, N_KEYS);
-            		display_pos();
+            		display_current_pos();
             	}
             	Seg7_write(5, 0);
             	Leds_clear(1 << 2);
@@ -250,7 +254,7 @@ int main(void){
             // Automatic depl
             else{
                 
-                uart_send_msg("Starting automatic deplacement\n");
+                uart_send_msg("Starting automatic deplacement\n\r");
             	 // Calculate destination pos
             	current_pos = Pos_read();
             	current_dir = (switches & SWITCH_DIR) >> 2;
@@ -267,11 +271,11 @@ int main(void){
 				Move_run();
 				Leds_set(1 << 1);
 				while(Move_busy_read()){
-					display_pos();
+					display_current_pos();
 					cnt_auto++;
 					if(cnt_auto == 1000){
 						cnt_auto = 0;
-						uart_send_msg("1000 step !\n");
+						uart_send_msg("1000 step !\n\r");
 					}
 				}
 				Seg7_write(5, 0);
@@ -281,6 +285,15 @@ int main(void){
         
         }
         pressed[1] = pressed_edge[1];
-
+        if(!pressed[2] && pressed_edge[2]){
+            #ifdef DEBUG
+                printf("[main] KEY2 pressed\n");
+            #endif
+        }
+        display_pos(init_pos);
+        char format[] = "Initial position : %d\n\r";
+        char buffer[30];
+        sprintf(buffer, format, init_pos);
+        uart_send_msg(buffer);
     }
 }

@@ -73,4 +73,4 @@ void uart_send(uint8_t data);
  * @brief send a string to uart
  * @param string to send
 */
-void uart_send_msg(char * msg);
+void uart_send_msg(const char * msg);
