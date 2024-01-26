@@ -60,10 +60,15 @@ void fpga_ISR(void){
 	Speed_write(2);
 	Dir_write(current_dir);
 	Leds_set(1 << 3);
-	if(!current_dir)
+	if(!current_dir){
+		uart_send_msg("max\n");
 		Seg7_write(5, 0x48);
-	else
+	}
+	else{
+		uart_send_msg("min\n");
 		Seg7_write(5, 0x41);
+	}
+
 	// Launch auto move
 	Move_run();
 	// Ack
@@ -97,6 +102,7 @@ int main(void){
     uint16_t target_pos = 0;
     uint16_t init_pos = 0;
     uint32_t auto_steps = 0;
+    uint32_t cnt_auto = 0;
 
     bool pressed[N_KEYS] = {false, false, false, false};
     bool pressed_edge[N_KEYS] = {false, false, false, false};
@@ -263,6 +269,11 @@ int main(void){
 				Leds_set(1 << 1);
 				while(Move_busy_read()){
 					display_pos();
+					cnt_auto++;
+					if(cnt_auto == 1000){
+						cnt_auto = 0;
+						uart_send_msg("1000 step !\n");
+					}
 				}
 				Seg7_write(5, 0);
 				Leds_clear(1 << 3);
