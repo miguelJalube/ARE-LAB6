@@ -43,6 +43,8 @@
 // TX/RX STATUS
 #define LSR_OFFSET          0x14
 
+#define UART0_FIFO_FULL     0x7C
+
 
 #define UART0_BAUDRATE      9600
 #define CLK_FREQ            100000000

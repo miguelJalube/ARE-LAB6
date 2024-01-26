@@ -70,6 +70,7 @@ bool uart_rx_fifo_full(){
 }
 
 void uart_send(uint8_t data){
+    while(!(UART0_REG(UART0_FIFO_FULL) & 0x2));
     UART0_REG(RBR_THR_DLL_OFFSET) = data & 0xFF;
 }
 
