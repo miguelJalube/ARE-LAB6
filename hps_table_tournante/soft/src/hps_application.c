@@ -200,7 +200,7 @@ int main(void){
             	Dir_write(1);
 
             	// Let the disc go to the idx
-            	Init_write();
+            	Cal_write();
             	while(Busy_read()){
             		display_pos();
             	}
@@ -210,7 +210,6 @@ int main(void){
 
             	// Calculate destination pos
             	Move_write(ARROW_POS);
-
 
                 // Set table for automatic move until arrow pos is reached
             	Speed_write((Switchs_read() & SWITCH_SPEED) >> 3);

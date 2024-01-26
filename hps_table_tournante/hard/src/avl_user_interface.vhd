@@ -364,7 +364,7 @@ begin
         end if;
 
       when GET_INIT_POS =>
-        cal_init_busy_s <= '0';
+        cal_init_busy_s <= '1';
         mem_pos_cal_s   <= '1';
         fut_state_cal_s <= WAIT_FOR_CAL_STOP;
 
