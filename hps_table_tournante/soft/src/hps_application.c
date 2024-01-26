@@ -51,12 +51,12 @@ void fpga_ISR(void){
 	En_pap_write(0);
 	// Calculate destination pos
 	uint16_t current_pos = Pos_read();
-	uint16_t current_dir = 0;
+	uint16_t current_dir = (limit == 0x2 ? 1 : 0);
 	uint16_t target_pos = current_pos + (current_dir ? -1000 : 1000);
 	Move_write(target_pos);
 	// Set table for automatic move until arrow pos is reached
 	Speed_write(2);
-	Dir_write(0);
+	Dir_write(current_dir);
 	// Launch auto move
 	Move_run();
 	// Ack
@@ -84,7 +84,6 @@ void display_pos(){
 int main(void){
     // Variable declaration
     uint32_t switches;
-    uint32_t keys_value, old_keys_value;
 
     uint16_t current_pos = 0;
     uint16_t current_dir = 0;
@@ -231,6 +230,7 @@ int main(void){
             	current_dir = (switches & SWITCH_DIR) >> 2;
             	auto_steps = ((switches & SWITCH_AUTO_DEPL) >> 5) * 1000;
             	target_pos = current_pos + (current_dir ? -auto_steps : auto_steps);
+            	printf("Target pos = %u\n", target_pos);
 				Move_write(target_pos);
 
 				// Set table for automatic move until arrow pos is reached

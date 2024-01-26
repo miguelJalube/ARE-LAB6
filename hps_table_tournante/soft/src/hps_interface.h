@@ -82,7 +82,7 @@
 #define EN_PAP_BITS         0x01
 #define INIT_BITS           0x02
 #define CAL_BITS            0x01
-#define DEPL_BITS			0x3fff
+#define DEPL_BITS			0xffff
 #define MOVE_BITS			0x1
 #define LIMIT_BITS			0x3
 #define ACK_BIT				0x1

@@ -396,13 +396,9 @@ begin
     case cur_state_req_move_s is
       when WAITING =>
         if run_move_s = '1' then
-          fut_state_req_mov_s      <= CALCULATE_POS_END;
+          fut_state_req_mov_s      <= COUNT_MOVE;
         else fut_state_req_mov_s <= WAITING;
         end if;
-
-      when CALCULATE_POS_END =>
-        calculate_pos_end_s <= '1';
-        fut_state_req_mov_s <= COUNT_MOVE;
 
       when COUNT_MOVE =>
         move_busy_s <= '1';
