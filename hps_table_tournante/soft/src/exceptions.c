@@ -40,15 +40,18 @@ void fpga_ISR(void);
 // Define the IRQ exception handler
 void __attribute__ ((interrupt)) __cs3_isr_irq (void)
 {
-	/***********
-	 * TO DO
-	 **********/
 
 	// Read CPU Interface registers to determine which peripheral has caused an interrupt 
+	uint32_t interrupt_ID = *((volatile uint32_t *)0xFFFEC10C);
 	
 	// Handle the interrupt if it comes from the fpga
+	if (interrupt_ID == FPGA_IRQ0)
+		fpga_ISR();
+	else
+		while(1);
 
 	// Clear interrupt from the CPU Interface
+	*((volatile uint32_t *)0xFFFEC110) = interrupt_ID;
     
 	return;
 } 
@@ -111,6 +114,25 @@ void enable_A9_interrupts(void)
 	asm("msr cpsr, %[ps]" : : [ps]"r"(status));
 }
 
+void config_interrupt(uint32_t n, uint32_t cpu_target){
+	// Configure the Set-Enable Register
+	// Offset is int(n°/32) * 4
+	// Index is n mod 32
+	uint32_t reg_offset, index, value, address;
+
+	reg_offset = (n >> 3) & 0xfffffffc;
+	index = n & 0x1f;
+	value = 0x1 << index;
+	address = ICDISER + reg_offset;
+	*(volatile uint32_t *)address |= value;
+
+	// Configure the Interrupt cpu target
+	reg_offset = (n & 0xfffffffc);
+	index = n & 0x3;
+	address = ICDIPTR + reg_offset + index;
+	*(volatile uint8_t *)address = (uint8_t)cpu_target;
+}
+
 /* 
  * Configure the Generic Interrupt Controller (GIC)
 */
@@ -119,5 +141,19 @@ void config_GIC(void)
 	/***********
 	 * TO DO
 	 **********/
+	// GIC int n° is 72 CPU0
+	config_interrupt(FPGA_IRQ0, CPU_INTERFACE_0);
+
+	// Set Interrupt Priority Mask Register (ICCPMR). Enable interrupts of all
+	// priorities
+	*((int *) ICCPMR) = 0xFFFF;
+
+	// Set CPU Interface Control Register (ICCICR). Enable signaling of
+	// interrupts
+	*((int *) ICCICR) = 1;
+
+	// Configure the Distributor Control Register (ICDDCR) to send pending
+	// interrupts to CPUs
+	*((int *) ICDDCR) = 1;
 
 }

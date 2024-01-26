@@ -23,6 +23,15 @@
  * 1.0    12.01.2024  MJ           Version for lab6.
  *
 *****************************************************************************************/
+#define FPGA_IRQ0 	72
+
+#define CPU_INTERFACE_0		0x1
+
+#define ICCPMR 				0xFFFEC104
+#define ICCICR				0xFFFEC100
+#define ICDDCR				0xFFFED000
+#define ICDISER				0xfffed100
+#define ICDIPTR				0xFFFED800
 
 // Define the IRQ exception handler
 void __attribute__ ((interrupt)) __cs3_isr_irq (void);
@@ -55,6 +64,6 @@ void enable_A9_interrupts(void);
 */
 void config_GIC(void);
 
-void config_interrupt(int N, int CPU_target);
+void config_interrupt(uint32_t n, uint32_t cpu_target);
 
 void hps_timer_ISR(void);

@@ -90,51 +90,80 @@ architecture rtl of avl_user_interface is
     WAITING,
     CAPT_SUP,
     IDX,
-    GET_INIT_POS
+    GET_INIT_POS,
+    WAIT_FOR_CAL_STOP
   );
 
-  constant AVL_BUS_PERIOD              : integer                                := 20;       -- 50MHz => 20ns
-  constant TOP_BASE_PERIOD             : integer                                := 10000000; -- 10ms
+  type req_mov_state_t is (
+    WAITING,
+    CALCULATE_POS_END,
+    COUNT_MOVE
+  );
 
-  constant INTERFACE_ID                : std_logic_vector(avl_readdata_o'range) := x"DEADBEEF";
-  constant READ_NOT_USED               : std_logic_vector(avl_readdata_o'range) := x"DDEEAADD";
-  constant READ_RESERVED               : std_logic_vector(avl_readdata_o'range) := x"BEEEEEEF";
+  type irq_state_t is (
+    NO_IRQ,
+    IRQ_MIN,
+    IRQ_MAX,
+    GET_OUT_MIN,
+    GET_OUT_MAX,
+    WAIT_END
+  );
+
+  constant AVL_BUS_PERIOD                          : integer                                := 20;       -- 50MHz => 20ns
+  constant TOP_BASE_PERIOD                         : integer                                := 10000000; -- 10ms
+
+  constant INTERFACE_ID                            : std_logic_vector(avl_readdata_o'range) := x"DEADBEEF";
+  constant READ_NOT_USED                           : std_logic_vector(avl_readdata_o'range) := x"DDEEAADD";
+  constant READ_RESERVED                           : std_logic_vector(avl_readdata_o'range) := x"BEEEEEEF";
+  constant POS_MIN                                 : unsigned(15 downto 0)                  := to_unsigned(2500, 16);
+  constant POS_MAX                                 : unsigned(15 downto 0)                  := to_unsigned(62500, 16);
+  constant POS_MID                                 : unsigned(15 downto 0)                  := to_unsigned(35000, 16);
 
   --| Signals declarations   |--------------------------------------------------------------   
   --| Top signal   |
-  signal top_10ms_s                    : std_logic;
-  signal top_cpt_pres_s, top_cpt_fut_s : unsigned(3 downto 0);
-  signal freq_div_s                    : unsigned(3 downto 0);
-  signal top_pap_s                     : std_logic;
-  signal speed_s                       : std_logic_vector(1 downto 0);
+  signal top_10ms_s                                : std_logic;
+  signal top_cpt_pres_s, top_cpt_fut_s             : unsigned(3 downto 0);
+  signal freq_div_s                                : unsigned(3 downto 0);
+  signal top_pap_s                                 : std_logic;
+  signal speed_s                                   : std_logic_vector(1 downto 0);
   --| Avalon signal   |
-  signal avl_readdata_s                : std_logic_vector(avl_readdata_o'range);
-  signal avl_readdatavalid_s           : std_logic;
-  signal addr_int_s                    : integer := 0;
+  signal avl_readdata_s                            : std_logic_vector(avl_readdata_o'range);
+  signal avl_readdatavalid_s                       : std_logic;
+  signal addr_int_s                                : integer := 0;
   --| I/Os   |
-  signal led_s                         : std_logic_vector(led_o'range);
-  signal hex0_s                        : std_logic_vector(hex0_o'range);
-  signal hex1_s                        : std_logic_vector(hex1_o'range);
-  signal hex2_s                        : std_logic_vector(hex2_o'range);
-  signal hex3_s                        : std_logic_vector(hex3_o'range);
-  signal hex4_s                        : std_logic_vector(hex4_o'range);
-  signal hex5_s                        : std_logic_vector(hex5_o'range);
+  signal led_s                                     : std_logic_vector(led_o'range);
+  signal hex0_s                                    : std_logic_vector(hex0_o'range);
+  signal hex1_s                                    : std_logic_vector(hex1_o'range);
+  signal hex2_s                                    : std_logic_vector(hex2_o'range);
+  signal hex3_s                                    : std_logic_vector(hex3_o'range);
+  signal hex4_s                                    : std_logic_vector(hex4_o'range);
+  signal hex5_s                                    : std_logic_vector(hex5_o'range);
   --| Turn table part   |
-  signal t_inc_pos_s                   : std_logic;
-  signal t_dec_pos_s                   : std_logic;
-  signal reg_pos_pres_s                : unsigned(15 downto 0);
-  signal reg_pos_fut_s                 : unsigned(15 downto 0);
-  signal dir_s                         : std_logic;
-  signal en_pap_s                      : std_logic;
-  signal t_idx_s                       : std_logic;
-  signal t_capt_sup_s                  : std_logic;
-  signal run_cal_s                     : std_logic;
-  signal run_init_s                    : std_logic;
-  signal cal_init_busy_s               : std_logic;
-  signal mem_pos_cal_s                 : std_logic;
-  signal pos_init_s                    : unsigned(15 downto 0);
-  signal stop_pap_s                    : std_logic;
-  signal cur_state_s, fut_state_s      : cal_state_t;
+  signal t_inc_pos_s                               : std_logic;
+  signal t_dec_pos_s                               : std_logic;
+  signal t_capt_sup_s                              : std_logic;
+  signal t_idx_s                                   : std_logic;
+  signal reg_pos_pres_s, reg_pos_fut_s             : unsigned(15 downto 0);
+  signal dir_s                                     : std_logic;
+  signal en_pap_from_hps_s                         : std_logic;
+  signal run_cal_s                                 : std_logic;
+  signal run_init_s                                : std_logic;
+  signal cal_init_busy_s                           : std_logic;
+  signal mem_pos_cal_s                             : std_logic;
+  signal stop_pap_s                                : std_logic;
+  signal cur_state_cal_s, fut_state_cal_s          : cal_state_t;
+  signal pos_from_hps_s                            : unsigned(15 downto 0);
+  signal pos_end_s                                 : unsigned(15 downto 0);
+  signal move_busy_s                               : std_logic;
+  signal run_move_s                                : std_logic;
+  signal end_move_s                                : std_logic;
+  signal cur_state_req_move_s, fut_state_req_mov_s : req_mov_state_t;
+  signal calculate_pos_end_s                       : std_logic;
+  signal cur_state_irq_s, fut_state_irq_s          : irq_state_t;
+  signal avl_irq_s                                 : std_logic;
+  signal lim_min_s, lim_max_s                      : std_logic;
+  signal ack_s                                     : std_logic;
+  signal get_out_s                                 : std_logic;
 
 begin
 
@@ -151,7 +180,7 @@ begin
   );
 
   -- Top frequency divider -----------------------------------------------------------------------------------------------------
-  freq_div_s    <= to_unsigned(10, freq_div_s'length) when speed_s = "00" else to_unsigned(4, freq_div_s'length) when speed_s = "01" else to_unsigned(2, freq_div_s'length) when speed_s = "10" else to_unsigned(1, freq_div_s'length) when speed_s = "11";
+  freq_div_s    <= to_unsigned(10 - 1, freq_div_s'length) when speed_s = "00" else to_unsigned(4 - 1, freq_div_s'length) when speed_s = "01" else to_unsigned(2 - 1, freq_div_s'length) when speed_s = "10" else to_unsigned(1 - 1, freq_div_s'length) when speed_s = "11";
   top_cpt_fut_s <= top_cpt_pres_s when top_10ms_s = '0' else top_cpt_pres_s - 1 when top_cpt_pres_s /= 0 else freq_div_s;
 
   process (avl_reset_i, avl_clk_i)
@@ -163,34 +192,39 @@ begin
     end if;
   end process;
 
-  top_pap_s <= '1' when top_cpt_pres_s = 0 else '0';
+  top_pap_s <= '1' when top_cpt_pres_s = 0 and top_10ms_s = '1' else '0';
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- Turn table sync part -------------------------------------------------------------------------------------------------------
   sync : process (avl_clk_i, avl_reset_i)
   begin
     if avl_reset_i = '1' then
-      t_inc_pos_s <= '0';
-      t_dec_pos_s <= '0';
+      t_inc_pos_s          <= '0';
+      t_dec_pos_s          <= '0';
+
+      cur_state_cal_s      <= WAITING;
+
+      cur_state_req_move_s <= WAITING;
+
+      cur_state_irq_s      <= NO_IRQ;
+
     elsif rising_edge(avl_clk_i) then
-      t_inc_pos_s <= t_inc_pos_i;
-      t_dec_pos_s <= t_dec_pos_i;
+      t_inc_pos_s          <= t_inc_pos_i;
+      t_dec_pos_s          <= t_dec_pos_i;
+      t_capt_sup_s         <= t_capt_sup_i;
+      t_idx_s              <= t_idx_i;
 
-      cur_state_s <= fut_state_s;
-      if mem_pos_cal_s = '1' then
-        if run_cal_s = '1' then
-          pos_init_s <= reg_pos_pres_s;
-        elsif run_init_s = '1' then
-          reg_pos_pres_s <= pos_init_s;
-        end if;
-      end if;
+      cur_state_cal_s      <= fut_state_cal_s;
 
+      cur_state_req_move_s <= fut_state_req_mov_s;
+
+      cur_state_irq_s      <= fut_state_irq_s;
     end if;
   end process;
   -------------------------------------------------------------------------------------------------------------------------------
 
-  -- Futur state register of position register ----------------------------------------------------------------------------------
-  reg_pos_fut_s <= reg_pos_pres_s + 1 when t_inc_pos_s = '1' else reg_pos_pres_s - 1 when t_dec_pos_s = '1' else reg_pos_pres_s;
+  -- Futur state decoder of position register -----------------------------------------------------------------------------------
+  reg_pos_fut_s <= reg_pos_pres_s + 1 when t_inc_pos_i = '1' else reg_pos_pres_s - 1 when t_dec_pos_i = '1' else reg_pos_pres_s;
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- Read access part -----------------------------------------------------------------------------------------------------------
@@ -225,9 +259,15 @@ begin
 
           when 6      => avl_readdata_s(reg_pos_pres_s'range)                                                 <= std_logic_vector(reg_pos_pres_s);
 
-          when 7      => avl_readdata_s(3 downto 0)                                                           <= speed_s & dir_s & en_pap_s;
+          when 7      => avl_readdata_s(3 downto 0)                                                           <= speed_s & dir_s & en_pap_from_hps_s;
 
           when 8      => avl_readdata_s(0)                                                                    <= cal_init_busy_s;
+
+          when 9      => avl_readdata_s(15 downto 0)                                                          <= std_logic_vector(pos_end_s);
+
+          when 10     => avl_readdata_s(0)                                                                   <= move_busy_s;
+
+          when 11     => avl_readdata_s(1 downto 0)                                                          <= lim_max_s & lim_min_s;
 
           when others => avl_readdata_s                                                                  <= READ_NOT_USED;
         end case;
@@ -240,21 +280,24 @@ begin
   write_channel : process (avl_clk_i, avl_reset_i)
   begin
     if avl_reset_i = '1' then
-      led_s    <= (others => '0');
-      hex0_s   <= (others => '0');
-      hex1_s   <= (others => '0');
-      hex2_s   <= (others => '0');
-      hex3_s   <= (others => '0');
-      hex4_s   <= (others => '0');
-      hex5_s   <= (others => '0');
-      speed_s  <= "00";
-      dir_s    <= '0';
-      en_pap_s <= '0';
+      led_s             <= (others => '0');
+      hex0_s            <= (others => '0');
+      hex1_s            <= (others => '0');
+      hex2_s            <= (others => '0');
+      hex3_s            <= (others => '0');
+      hex4_s            <= (others => '0');
+      hex5_s            <= (others => '0');
+      speed_s           <= "00";
+      dir_s             <= '0';
+      en_pap_from_hps_s <= '0';
+      run_cal_s         <= '0';
+      run_init_s        <= '0';
+      pos_end_s         <= (others => '0');
+      run_move_s        <= '0';
+
+      reg_pos_pres_s    <= POS_MID;
 
     elsif rising_edge(avl_clk_i) then
-      -- By default pos register is update by the turning table part (least priority)
-      reg_pos_pres_s <= reg_pos_fut_s;
-
       if avl_write_i = '1' then
         case addr_int_s is
           when 3 => led_s          <= avl_writedata_i(led_s'range);
@@ -267,58 +310,176 @@ begin
           when 5 => hex4_s         <= avl_writedata_i(hex4_s'range);
             hex5_s                   <= avl_writedata_i(hex5_s'high + hex4_s'length downto hex4_s'length);
 
-          when 6 => reg_pos_pres_s <= unsigned(avl_writedata_i(reg_pos_pres_s'range));
+          when 6 => reg_pos_pres_s <= unsigned(avl_writedata_i(pos_from_hps_s'range));
 
           when 7 => speed_s        <= avl_writedata_i(3 downto 2);
             dir_s                    <= avl_writedata_i(1);
-            en_pap_s                 <= avl_writedata_i(0);
+            en_pap_from_hps_s        <= avl_writedata_i(0);
 
           when 8 => run_cal_s      <= avl_writedata_i(0);
-            => run_init_s            <= avl_writedata_i(1);
+            run_init_s               <= avl_writedata_i(1);
+
+          when 9      => pos_end_s      <= unsigned(avl_writedata_i(15 downto 0));
+
+          when 10     => run_move_s    <= avl_writedata_i(0);
+
+          when 11     => ack_s         <= avl_writedata_i(0);
 
           when others => null;
         end case;
+
+      else reg_pos_pres_s <= reg_pos_fut_s;
       end if;
     end if;
   end process write_channel;
   -------------------------------------------------------------------------------------------------------------------------------
 
-  -- MSS for calibration part ---------------------------------------------------------------------------------------------------
-  cal_mss : process (run_cal_s, run_init_s, t_capt_sup_s, t_idx_s)
+  -- MSS for calibration and init part ------------------------------------------------------------------------------------------
+  cal_mss : process (cur_state_cal_s, run_cal_s, run_init_s, t_capt_sup_i, t_idx_i, end_move_s)
   begin
     -- Default value
     cal_init_busy_s <= '0';
     mem_pos_cal_s   <= '0';
-    stop_pap_s      <= '0';
-    fut_state_s     <= WAITING;
+    fut_state_cal_s <= WAITING;
 
-    case cur_state_s is
+    case cur_state_cal_s is
       when WAITING =>
+        cal_init_busy_s <= '0';
         if run_cal_s = '1' or run_init_s = '1' then
-          fut_state_s <= CAPT_SUP;
+          fut_state_cal_s <= CAPT_SUP;
         end if;
 
       when CAPT_SUP =>
         cal_init_busy_s <= '1';
-        if t_capt_sup_s = '1' then
-          fut_state_s <= IDX;
+        if t_capt_sup_i = '1' then
+          fut_state_cal_s      <= IDX;
+        else fut_state_cal_s <= CAPT_SUP;
         end if;
 
       when IDX =>
-        if t_idx_s = '1' then
-          fut_state_s <= GET_INIT_POS;
+        cal_init_busy_s <= '1';
+        if t_idx_i = '1' then
+          fut_state_cal_s      <= GET_INIT_POS;
+        else fut_state_cal_s <= IDX;
         end if;
 
       when GET_INIT_POS =>
-        fut_state_s   <= WAITING;
-        stop_pap_s    <= '1';
-        mem_pos_cal_s <= '1';
+        cal_init_busy_s <= '0';
+        mem_pos_cal_s   <= '1';
+        fut_state_cal_s <= WAIT_FOR_CAL_STOP;
+
+      when WAIT_FOR_CAL_STOP =>
+        if run_cal_s = '0' and run_init_s = '0' then
+          fut_state_cal_s      <= WAITING;
+        else fut_state_cal_s <= WAIT_FOR_CAL_STOP;
+        end if;
 
       when others =>
-        fut_state_s <= WAITING;
+        fut_state_cal_s <= WAITING;
 
     end case;
   end process cal_mss;
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- Req mov decounter fut decoder ----------------------------------------------------------------------------------------------
+  end_move_s <= '1' when reg_pos_pres_s = pos_end_s else '0';
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- MSS for requested movement -------------------------------------------------------------------------------------------------
+  req_mov_mss : process (cur_state_req_move_s, run_move_s, end_move_s)
+  begin
+    -- Default value
+    move_busy_s         <= '0';
+    calculate_pos_end_s <= '0';
+    fut_state_req_mov_s <= WAITING;
+
+    case cur_state_req_move_s is
+      when WAITING =>
+        if run_move_s = '1' then
+          fut_state_req_mov_s      <= CALCULATE_POS_END;
+        else fut_state_req_mov_s <= WAITING;
+        end if;
+
+      when CALCULATE_POS_END =>
+        calculate_pos_end_s <= '1';
+        fut_state_req_mov_s <= COUNT_MOVE;
+
+      when COUNT_MOVE =>
+        move_busy_s <= '1';
+        if end_move_s = '1' then
+          fut_state_req_mov_s      <= WAITING;
+        else fut_state_req_mov_s <= COUNT_MOVE;
+        end if;
+
+      when others =>
+        fut_state_req_mov_s <= WAITING;
+
+    end case;
+
+  end process req_mov_mss;
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- MSS for irq handling -------------------------------------------------------------------------------------------------------
+  irq_mss : process (cur_state_irq_s, lim_min_s, lim_max_s, ack_s, move_busy_s, dir_s)
+  begin
+    -- default value
+    avl_irq_s       <= '0';
+    get_out_s       <= '0';
+
+    fut_state_irq_s <= NO_IRQ;
+
+    case cur_state_irq_s is
+      when NO_IRQ =>
+        if lim_min_s = '1' then
+          fut_state_irq_s <= IRQ_MIN;
+        elsif lim_max_s = '1' then
+          fut_state_irq_s      <= IRQ_MAX;
+        else fut_state_irq_s <= NO_IRQ;
+        end if;
+
+      when IRQ_MIN =>
+        avl_irq_s <= '1';
+        if ack_s = '1' then
+          fut_state_irq_s      <= GET_OUT_MIN;
+        else fut_state_irq_s <= IRQ_MIN;
+        end if;
+
+      when GET_OUT_MIN =>
+        get_out_s <= '1';
+        if move_busy_s = '1' and dir_s = '0' then
+          fut_state_irq_s      <= WAIT_END;
+        else fut_state_irq_s <= GET_OUT_MIN;
+        end if;
+
+      when IRQ_MAX =>
+        avl_irq_s <= '1';
+        if ack_s = '1' then
+          fut_state_irq_s      <= GET_OUT_MAX;
+        else fut_state_irq_s <= IRQ_MAX;
+        end if;
+
+      when GET_OUT_MAX =>
+        get_out_s <= '1';
+        if move_busy_s = '1' and dir_s = '1' then
+          fut_state_irq_s      <= WAIT_END;
+        else fut_state_irq_s <= GET_OUT_MAX;
+        end if;
+
+      when WAIT_END =>
+        if move_busy_s = '0' then
+          fut_state_irq_s      <= NO_IRQ;
+        else fut_state_irq_s <= WAIT_END;
+        end if;
+
+      when others => fut_state_irq_s <= NO_IRQ;
+    end case;
+
+  end process irq_mss;
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- Interface for irq mss ------------------------------------------------------------------------------------------------------
+  lim_min_s <= '1' when reg_pos_pres_s <= POS_MIN else '0';
+  lim_max_s           <= '1' when reg_pos_pres_s >= POS_MAX else '0';
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- Interface management
@@ -333,10 +494,11 @@ begin
   -- Avalon
   avl_readdata_o      <= avl_readdata_s;
   avl_readdatavalid_o <= avl_readdatavalid_s;
+  avl_irq_o           <= avl_irq_s;
   -- Turnnig table
   t_position_o        <= std_logic_vector(reg_pos_pres_s);
   t_dir_pap_o         <= dir_s;
-  t_enable_pap_o      <= '0' when stop_pap_s = '1' else en_pap_s;
+  t_enable_pap_o      <= '0' when avl_irq_s = '1' else '1' when cal_init_busy_s = '1' or move_busy_s = '1' or get_out_s = '1' else en_pap_from_hps_s;
   t_top_pap_o         <= top_pap_s;
   -- Unused
   avl_waitrequest_o   <= '0';

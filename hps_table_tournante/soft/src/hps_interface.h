@@ -44,7 +44,7 @@
  *  [15 ..  0] |  val_pos |  val_pos |
  * ------------|----------|----------|
  */
-#define RESERVED1_OFFSET    0x18
+#define POSITION_OFFSET    0x18
 
 /**
  *  Bits       |        R |        W |
@@ -55,7 +55,7 @@
  *         [0] |   en_pap |   en_pap |
  * ------------|----------|----------|
  */
-#define RESERVED2_OFFSET    0x1C
+#define TABLE_CMD_OFFSET    0x1C
 
 /**
  *  Bits       |        R |        W |
@@ -65,31 +65,31 @@
  *         [0] | cal_busy |  run_cal |
  * ------------|----------|----------|
  */
-#define RESERVED3_OFFSET    0x20
+#define TABLE_CAL_INIT_OFFSET    0x20
+
+#define MOVEMENT_OFFSET 		 0x24
+#define TABLE_MOVE_OFFSET		 0x28
+#define IRQ_LIMIT_OFFSET         0x2c
 
 #define MASK_BUTTON         0xf
 #define MASK_SWITCH         0x3ff
 #define MASK_LED            0x3ff
 
 // Define bits usage
-#define POS_BITS            0xff
+#define POS_BITS            0xffff
 #define SPEED_BITS          0x0c
 #define DIR_BITS            0x02
 #define EN_PAP_BITS         0x01
 #define INIT_BITS           0x02
 #define CAL_BITS            0x01
+#define DEPL_BITS			0x3fff
+#define MOVE_BITS			0x1
+#define LIMIT_BITS			0x3
+#define ACK_BIT				0x1
 
 #define ITF_REG(_x_) *(volatile uint32_t *)(AXI_LW_HPS_FPGA_BASE_ADD + INTERFACE_OFFSET + _x_)
 
 //=================================
-
-
-// Define bits usage
-#define SWITCHS_BITS        0x000003FF
-#define LEDS_BITS           0x000FFC00
-#define KEYS_BITS           0x00F00000
-#define SEG7_BITS           0x0FFFFFFF
-#define SEG7_BITS_HEX       0x7F
 
 //***********************************//
 //****** Global usage function ******//
@@ -177,16 +177,28 @@ uint32_t En_pap_read();
 // Parameter : "new_en_pap"= New step by step motor status value to be applied
 void En_pap_write(uint32_t new_en_pap);
 
-// Run_cal_write function : Writes the calibration status
-// Parameter : "new_run_cal"= New calibration status value to be applied
-void Cal_write(uint32_t new_cal_busy);
-
 // busy_read function : Reads the calibration busy status
 // Return : 1 for busy, 0 for not busy
 uint32_t Busy_read();
 
+// Run_cal_write function : Writes the calibration status
+// Parameter : "new_run_cal"= New calibration status value to be applied
+void Cal_write();
+
 // Run_init_write function : Writes the initialization status
 // Parameter : "new_run_init"= New initialization status value to be applied
-void Init_write(uint32_t new_run_init);
+void Init_write();
+
+void Move_write(uint32_t depl);
+
+uint32_t Move_read(void);
+
+void Move_run();
+
+uint32_t Move_busy_read(void);
+
+uint32_t Limit_read(void);
+
+uint32_t Write_ack();
 
 #endif

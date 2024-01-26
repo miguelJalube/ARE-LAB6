@@ -26,7 +26,7 @@
 
 #include "hps_interface.h"
 
-#define DEBUG_ITF 1
+//#define DEBUG_ITF 1
 
 uint32_t get_constant(void){
     return ITF_REG(CONSTANT_ID_OFFSET);
@@ -34,8 +34,7 @@ uint32_t get_constant(void){
 
 uint32_t Switchs_read(void){
     // Read data register and mask with SWITCHS_BITS
-    uint32_t value = ITF_REG(SWITCHS_OFFSET);
-    return value;
+    return ITF_REG(SWITCHS_OFFSET);
 }
 
 void Leds_write(uint32_t value){
@@ -47,7 +46,7 @@ void Leds_write(uint32_t value){
 }
 void Leds_set(uint32_t maskleds){
     #ifdef DEBUG_ITF
-    printf("Value to set : %#X\n", ((maskleds << LEDS_OFFSET) & LEDS_BITS));
+    printf("Value to set : %#X\n", ((maskleds << LEDS_OFFSET) & MASK_LED));
     #endif
 
     // Write led data register and mask with LEDS_BITS but keep the other values
@@ -56,7 +55,7 @@ void Leds_set(uint32_t maskleds){
 
 void Leds_clear(uint32_t maskleds){
     #ifdef DEBUG_ITF
-    printf("Bits to clear : %#X\n", (~(maskleds << 10) & LEDS_BITS));
+    printf("Bits to clear : %#X\n", (~(maskleds << 10) & MASK_LED));
     #endif
 
     // Set to 0 the bits to clear according to maskleds
@@ -77,14 +76,9 @@ bool Key_read(int key_number){
         printf("Error : Key_read : key_number must be between 0 and 3\n");
         return;
     }
-    // Read data register and mask with KEYS_BITS
-    uint32_t value = ITF_REG(BUTTON_OFFSET);
-
-    // Shift the mask to the key_number position
-    uint32_t mask = 1 << key_number;
 
     // Return true if the key is pressed
-    return !(bool)(value & mask);
+    return !(bool)(ITF_REG(BUTTON_OFFSET) & (1 << key_number));
 }
 
 uint32_t seg7_val(uint32_t val){
@@ -144,8 +138,8 @@ uint32_t seg7_val(uint32_t val){
 }
 
 void Seg7_write(int seg7_number, uint8_t value){
-    if ((seg7_number < 0) || (seg7_number > 5) || (value > 63)) {
-        printf("Error : Seg7_write_hex : seg7_number must be between 0 and 3\n");
+    if ((seg7_number < 0) || (seg7_number > 5)) {
+        printf("Error : Seg7_write_hex : seg7_number must be between 0 and 5\n");
         return;
     }
 
@@ -169,14 +163,14 @@ void Seg7_write(int seg7_number, uint8_t value){
     uint32_t res = value << (seg7_number * 7);
 
     // Set to 0 the 7-segments display to write
-	uint32_t current = ITF_REG(offset) & ~hex_mask;
+	uint32_t current = ITF_REG(offset) | hex_mask;
 
     #ifdef DEBUG_ITF
     printf("Res or current : %#X\n", res | current);
     #endif
 
     // Write the value to the 7-segments display keeping the other values in the register
-	ITF_REG(offset) = res | current;
+	ITF_REG(offset) = current & ~res;
 }
 
 void Seg7_write_hex(int seg7_number, uint32_t value){
@@ -189,61 +183,92 @@ void Seg7_write_hex(int seg7_number, uint32_t value){
 
 uint32_t Pos_read(){
     // Read data register and mask with POS_BITS
-    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && POS_BITS);
+    uint32_t value = (ITF_REG(POSITION_OFFSET) & POS_BITS);
     return value;
 }
 
 void Pos_write(uint32_t value){
     // Write data register and mask with POS_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && POS_BITS);
+    ITF_REG(POSITION_OFFSET) = (value & POS_BITS);
 }
 
 uint32_t Speed_read(){
     // Read data register and mask with SPEED_BITS
-    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && SPEED_BITS);
+    uint32_t value = (ITF_REG(TABLE_CMD_OFFSET) & SPEED_BITS) >> 2;
     return value;
 }
 
 void Speed_write(uint32_t value){
     // Write data register and mask with SPEED_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && SPEED_BITS);
+	ITF_REG(TABLE_CMD_OFFSET) &= ~SPEED_BITS;
+    ITF_REG(TABLE_CMD_OFFSET) |= ((value << 2) & SPEED_BITS);
 }
 
 uint32_t Dir_read(){
     // Read data register and mask with DIR_BITS
-    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && DIR_BITS);
+    uint32_t value = (ITF_REG(TABLE_CMD_OFFSET) & DIR_BITS) >> 1;
     return value;
 }
 
 void Dir_write(uint32_t value){
     // Write data register and mask with DIR_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && DIR_BITS);
+	ITF_REG(TABLE_CMD_OFFSET) &= ~DIR_BITS;
+    ITF_REG(TABLE_CMD_OFFSET) |= ((value << 1) & DIR_BITS);
 }
 
-void Init_write(uint32_t value){
+void Init_write(){
     // Write data register and mask with RUN_INIT_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && INIT_BITS);
+	ITF_REG(TABLE_CAL_INIT_OFFSET) |= INIT_BITS;
+	ITF_REG(TABLE_CAL_INIT_OFFSET) &= ~INIT_BITS;
 }
 
 uint32_t En_pap_read(){
     // Read data register and mask with EN_PAP_BITS
-    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && EN_PAP_BITS);
+    uint32_t value = (ITF_REG(TABLE_CMD_OFFSET) & EN_PAP_BITS);
     return value;
 }
 
 void En_pap_write(uint32_t value){
     // Write data register and mask with EN_PAP_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && EN_PAP_BITS);
-}
-
-void Cal_write(uint32_t value){
-    // Write data register and mask with RUN_CAL_BITS
-    ITF_REG(RESERVED1_OFFSET) = (value && CAL_BITS);
+	ITF_REG(TABLE_CMD_OFFSET) &= ~EN_PAP_BITS;
+    ITF_REG(TABLE_CMD_OFFSET) |= (value & EN_PAP_BITS);
 }
 
 uint32_t Busy_read(){
     // Read data register and mask with CAL_BUSY_BITS
-    uint32_t value = (ITF_REG(RESERVED1_OFFSET) && CAL_BITS);
+    uint32_t value = (ITF_REG(TABLE_CAL_INIT_OFFSET) & CAL_BITS);
     return value;
+}
+
+void Cal_write(){
+    // Write data register and mask with RUN_CAL_BITS
+	ITF_REG(TABLE_CAL_INIT_OFFSET) |= CAL_BITS;
+    ITF_REG(TABLE_CAL_INIT_OFFSET) &= ~CAL_BITS;
+}
+
+void Move_write(uint32_t depl){
+	ITF_REG(MOVEMENT_OFFSET) = (depl & DEPL_BITS);
+}
+
+uint32_t Move_read(void){
+	return (ITF_REG(MOVEMENT_OFFSET) & DEPL_BITS);
+}
+
+void Move_run(){
+	ITF_REG(TABLE_MOVE_OFFSET) |= MOVE_BITS;
+	ITF_REG(TABLE_MOVE_OFFSET) &= ~MOVE_BITS;
+}
+
+uint32_t Move_busy_read(void){
+	return (ITF_REG(TABLE_MOVE_OFFSET) & MOVE_BITS);
+}
+
+uint32_t Limit_read(void){
+	return (ITF_REG(IRQ_LIMIT_OFFSET) & LIMIT_BITS);
+}
+
+uint32_t Write_ack(){
+	ITF_REG(IRQ_LIMIT_OFFSET) |= ACK_BIT;
+	ITF_REG(IRQ_LIMIT_OFFSET) &= ~ACK_BIT;
 }
 
