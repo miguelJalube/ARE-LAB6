@@ -77,3 +77,10 @@ uint32_t uart_receive(){
     uint32_t data = UART0_REG(RBR_THR_DLL_OFFSET);
     return data;
 }
+
+void uart_send_msg(char * msg){
+    size_t i = 0;
+    while(msg[i] != '\0'){
+        uart_send(msg[i++]);
+    }
+}
