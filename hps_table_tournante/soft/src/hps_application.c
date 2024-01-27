@@ -45,6 +45,7 @@
 int __auto_semihosting;
 
 static const char message[] = "[KEY0] => Init or calibration sequence\r\n[KEY1] => Enable motor (Auto or manual)\r\n[KEY2] => Show initial position\r\n[KEY3] => not used\r\n[SW0] => 0 for calibration, 1 for initialisation\r\n[SW1] => 0 for manual, 1 for automatic\r\n[SW2] => 0 clockwise, 1 counter-clockwise\r\n[SW3-4] => speed value : 00 for min speed, 11 for max speed\r\n[SW5-8] => step number for automatic mode\r\n[SW9] => not used\r\n[LED0] => calibration done\r\n[LED1] => auto-move in progress\r\n[LED2] => manual-move in progress\r\n[LED3] => limit exceeded\r\n[LED4-6] => not used\r\n[LED7] => IRQ\r\n[7SEG] => Limits\r\n";
+static uint32_t flag_irq = 0;
 
 void fpga_ISR(void){
 	Leds_toggle(1 << 7);
@@ -73,6 +74,7 @@ void fpga_ISR(void){
 	Move_run();
 	// Ack
 	Write_ack();
+	flag_irq = 1;
 }
 
 // Update pressed keys
@@ -258,26 +260,26 @@ int main(void){
             	 // Calculate destination pos
             	current_pos = Pos_read();
             	current_dir = (switches & SWITCH_DIR) >> 2;
-            	auto_steps = ((switches & SWITCH_AUTO_DEPL) >> 5) * 1000;
-            	target_pos = current_pos + (current_dir ? -auto_steps : auto_steps);
-            	printf("Target pos = %u\n", target_pos);
-				Move_write(target_pos);
+            	auto_steps = ((switches & SWITCH_AUTO_DEPL) >> 5);
 
 				// Set table for automatic move until arrow pos is reached
 				Dir_write((switches & SWITCH_DIR) >> 2);
 				Speed_write((switches & SWITCH_SPEED) >> 3);
 
 				// Launch automatic move
-				Move_run();
 				Leds_set(1 << 1);
-				while(Move_busy_read()){
-					display_current_pos();
-					cnt_auto++;
-					if(cnt_auto == 1000){
-						cnt_auto = 0;
-						uart_send_msg("1000 step !\n\r");
+				for(int i = 1; i <= auto_steps; ++i){
+					if(flag_irq)
+						break;
+					target_pos = current_pos + (current_dir ? -(i * 1000) : (i * 1000));
+					Move_write(target_pos);
+					Move_run();
+					while(Move_busy_read()){
+						display_current_pos();
 					}
+					uart_send_msg("1000 step !\n\r");
 				}
+				flag_irq = 0;
 				Seg7_write(5, 0);
 				Leds_clear(1 << 3);
 				Leds_clear(1 << 1);
@@ -285,15 +287,20 @@ int main(void){
         
         }
         pressed[1] = pressed_edge[1];
+
         if(!pressed[2] && pressed_edge[2]){
             #ifdef DEBUG
                 printf("[main] KEY2 pressed\n");
             #endif
+			display_pos(init_pos);
+			char format[] = "Initial position : %d\n\r";
+			char buffer[30];
+			sprintf(buffer, format, init_pos);
+			uart_send_msg(buffer);
+			while(!pressed[2] && pressed_edge[2])
+				update_pressed(pressed_edge, N_KEYS);
         }
-        display_pos(init_pos);
-        char format[] = "Initial position : %d\n\r";
-        char buffer[30];
-        sprintf(buffer, format, init_pos);
-        uart_send_msg(buffer);
+        pressed[2] = pressed_edge[2];
+
     }
 }
