@@ -1,7 +1,54 @@
 
+\center
+
 # **Laboratoire 6: Conception d’une table tournante**
 
-## Auteurs : *Miguel Jalube* et *Bastien Pillonel*
+\hfill\break
+
+\hfill\break
+
+Département: **TIC**
+
+Unité d'enseignement: **ARE**
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\hfill\break
+
+\raggedright
+
+Auteur(s):
+
+- **PILLONEL Bastien**
+- **JALUBE Miguel**
+
+Professeur:
+
+- **MESSERLI Etienne**
+  
+Assistant:
+
+- **CONVERS Anthony**
+
+Date:
+
+- **Janvier 2024**
+
+\pagebreak
 
 ## Sommaire
 
@@ -32,6 +79,8 @@
   - [Synthèse](#synthèse)
 
 - [Conclusion](#conclusion)
+
+\pagebreak
 
 ## Introduction
 Ce laboratoire a pour but de concevoir une application de commande d’une table 
