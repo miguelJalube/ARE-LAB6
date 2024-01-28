@@ -89,15 +89,10 @@
 
 #define ITF_REG(_x_) *(volatile uint32_t *)(AXI_LW_HPS_FPGA_BASE_ADD + INTERFACE_OFFSET + _x_)
 
-//=================================
+// ========================== DE1-SoC I/O ==========================
 
-//***********************************//
-//****** Global usage function ******//
-
-/**
-* @brief Read the constant id value
-* @return Value of the constant id
-*/
+// get_constant function : Read the constant id value
+// Return Value of the constant id
 uint32_t get_constant(void);
 
 // Switchs_read function : Read the switchs value
@@ -142,8 +137,7 @@ void Seg7_write(int seg7_number, uint8_t value);
 // Return : None
 void Seg7_write_hex(int seg7_number, uint32_t value);
 
-//***********************************//
-//****** Interface functions   ******//
+// ========================== TURNING TABLE INTERFACE ==========================
 
 // Pos_read function : Reads the position of the disk
 // Return : Current disk position value
@@ -181,24 +175,29 @@ void En_pap_write(uint32_t new_en_pap);
 // Return : 1 for busy, 0 for not busy
 uint32_t Busy_read();
 
-// Run_cal_write function : Writes the calibration status
-// Parameter : "new_run_cal"= New calibration status value to be applied
+// Run_cal_write function : Launch the cal_init mss
 void Cal_write();
 
-// Run_init_write function : Writes the initialization status
-// Parameter : "new_run_init"= New initialization status value to be applied
-void Init_write();
-
+// Move_write function : write target position for auto move
+// Parameter : depl => targeted position
 void Move_write(uint32_t depl);
 
+// Move_read function : read target position for auto move
+// Return : get targeted position
 uint32_t Move_read(void);
 
+// Move_run function : launch the auto move mss
 void Move_run();
 
+// Move_busy_read function : read auto move status
+// Return : 1 if interface is currently doing an auto move
 uint32_t Move_busy_read(void);
 
+// Limit_read function : read which limit has triggered
+// Return : 0x2 => max limit 0x1 => min limit 0x0 => no limit
 uint32_t Limit_read(void);
 
-uint32_t Write_ack();
+// Write_ack function : acknoledge irq
+void Write_ack();
 
 #endif

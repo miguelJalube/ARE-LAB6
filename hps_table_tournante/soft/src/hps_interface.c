@@ -28,6 +28,8 @@
 
 //#define DEBUG_ITF 1
 
+// ========================== DE1-SoC I/O ==========================
+
 uint32_t get_constant(void){
     return ITF_REG(CONSTANT_ID_OFFSET);
 }
@@ -178,8 +180,7 @@ void Seg7_write_hex(int seg7_number, uint32_t value){
 }
 
 
-//***********************************//
-//****** Interface functions  ******//
+// ========================== TURNING TABLE INTERFACE ==========================
 
 uint32_t Pos_read(){
     // Read data register and mask with POS_BITS
@@ -214,12 +215,6 @@ void Dir_write(uint32_t value){
     // Write data register and mask with DIR_BITS
 	ITF_REG(TABLE_CMD_OFFSET) &= ~DIR_BITS;
     ITF_REG(TABLE_CMD_OFFSET) |= ((value << 1) & DIR_BITS);
-}
-
-void Init_write(){
-    // Write data register and mask with RUN_INIT_BITS
-	ITF_REG(TABLE_CAL_INIT_OFFSET) |= INIT_BITS;
-	ITF_REG(TABLE_CAL_INIT_OFFSET) &= ~INIT_BITS;
 }
 
 uint32_t En_pap_read(){
@@ -267,7 +262,7 @@ uint32_t Limit_read(void){
 	return (ITF_REG(IRQ_LIMIT_OFFSET) & LIMIT_BITS);
 }
 
-uint32_t Write_ack(){
+void Write_ack(){
 	ITF_REG(IRQ_LIMIT_OFFSET) |= ACK_BIT;
 	ITF_REG(IRQ_LIMIT_OFFSET) &= ~ACK_BIT;
 }
