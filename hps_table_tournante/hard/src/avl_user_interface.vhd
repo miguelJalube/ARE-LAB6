@@ -8,17 +8,17 @@
 ------------------------------------------------------------------------------------------
 --
 -- File                 : avl_user_interface.vhd
--- Author               : 
--- Date                 : 04.08.2022
+-- Author               : Bastien Pillonel & Miguel Jalube
+-- Date                 : 28.01.2023
 --
 -- Context              : Avalon user interface
 --
 ------------------------------------------------------------------------------------------
 -- Description : 
---   
+--   User interface for turning table
 ------------------------------------------------------------------------------------------
 -- Dependencies : 
---   
+--   top_gen.vhd, ilog_pkg.vhd
 ------------------------------------------------------------------------------------------
 -- Modifications :
 -- Ver    Date        Engineer    Comments
@@ -96,7 +96,6 @@ architecture rtl of avl_user_interface is
 
   type req_mov_state_t is (
     WAITING,
-    CALCULATE_POS_END,
     COUNT_MOVE
   );
 
@@ -114,7 +113,6 @@ architecture rtl of avl_user_interface is
 
   constant INTERFACE_ID                            : std_logic_vector(avl_readdata_o'range) := x"DEADBEEF";
   constant READ_NOT_USED                           : std_logic_vector(avl_readdata_o'range) := x"DDEEAADD";
-  constant READ_RESERVED                           : std_logic_vector(avl_readdata_o'range) := x"BEEEEEEF";
   constant POS_MIN                                 : unsigned(15 downto 0)                  := to_unsigned(2500, 16);
   constant POS_MAX                                 : unsigned(15 downto 0)                  := to_unsigned(62500, 16);
   constant POS_MID                                 : unsigned(15 downto 0)                  := to_unsigned(35000, 16);
@@ -139,18 +137,11 @@ architecture rtl of avl_user_interface is
   signal hex4_s                                    : std_logic_vector(hex4_o'range);
   signal hex5_s                                    : std_logic_vector(hex5_o'range);
   --| Turn table part   |
-  signal t_inc_pos_s                               : std_logic;
-  signal t_dec_pos_s                               : std_logic;
-  signal t_capt_sup_s                              : std_logic;
-  signal t_idx_s                                   : std_logic;
   signal reg_pos_pres_s, reg_pos_fut_s             : unsigned(15 downto 0);
   signal dir_s                                     : std_logic;
   signal en_pap_from_hps_s                         : std_logic;
-  signal run_cal_s                                 : std_logic;
-  signal run_init_s                                : std_logic;
+  signal run_cal_init_s                            : std_logic;
   signal cal_init_busy_s                           : std_logic;
-  signal mem_pos_cal_s                             : std_logic;
-  signal stop_pap_s                                : std_logic;
   signal cur_state_cal_s, fut_state_cal_s          : cal_state_t;
   signal pos_from_hps_s                            : unsigned(15 downto 0);
   signal pos_end_s                                 : unsigned(15 downto 0);
@@ -158,12 +149,12 @@ architecture rtl of avl_user_interface is
   signal run_move_s                                : std_logic;
   signal end_move_s                                : std_logic;
   signal cur_state_req_move_s, fut_state_req_mov_s : req_mov_state_t;
-  signal calculate_pos_end_s                       : std_logic;
   signal cur_state_irq_s, fut_state_irq_s          : irq_state_t;
   signal avl_irq_s                                 : std_logic;
   signal lim_min_s, lim_max_s                      : std_logic;
   signal ack_s                                     : std_logic;
   signal get_out_s                                 : std_logic;
+  signal mask_irq_s                                : std_logic;
 
 begin
 
@@ -180,6 +171,7 @@ begin
   );
 
   -- Top frequency divider -----------------------------------------------------------------------------------------------------
+  -- Count n time 10ms (divide frequency depending on speed)
   freq_div_s    <= to_unsigned(10 - 1, freq_div_s'length) when speed_s = "00" else to_unsigned(4 - 1, freq_div_s'length) when speed_s = "01" else to_unsigned(2 - 1, freq_div_s'length) when speed_s = "10" else to_unsigned(1 - 1, freq_div_s'length) when speed_s = "11";
   top_cpt_fut_s <= top_cpt_pres_s when top_10ms_s = '0' else top_cpt_pres_s - 1 when top_cpt_pres_s /= 0 else freq_div_s;
 
@@ -192,35 +184,7 @@ begin
     end if;
   end process;
 
-  top_pap_s <= '1' when top_cpt_pres_s = 0 and top_10ms_s = '1' else '0';
-  -------------------------------------------------------------------------------------------------------------------------------
-
-  -- Turn table sync part -------------------------------------------------------------------------------------------------------
-  sync : process (avl_clk_i, avl_reset_i)
-  begin
-    if avl_reset_i = '1' then
-      t_inc_pos_s          <= '0';
-      t_dec_pos_s          <= '0';
-
-      cur_state_cal_s      <= WAITING;
-
-      cur_state_req_move_s <= WAITING;
-
-      cur_state_irq_s      <= NO_IRQ;
-
-    elsif rising_edge(avl_clk_i) then
-      t_inc_pos_s          <= t_inc_pos_i;
-      t_dec_pos_s          <= t_dec_pos_i;
-      t_capt_sup_s         <= t_capt_sup_i;
-      t_idx_s              <= t_idx_i;
-
-      cur_state_cal_s      <= fut_state_cal_s;
-
-      cur_state_req_move_s <= fut_state_req_mov_s;
-
-      cur_state_irq_s      <= fut_state_irq_s;
-    end if;
-  end process;
+  top_pap_s     <= '1' when top_cpt_pres_s = 0 and top_10ms_s = '1' else '0';
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- Futur state decoder of position register -----------------------------------------------------------------------------------
@@ -290,10 +254,11 @@ begin
       speed_s           <= "00";
       dir_s             <= '0';
       en_pap_from_hps_s <= '0';
-      run_cal_s         <= '0';
-      run_init_s        <= '0';
+      run_cal_init_s    <= '0';
       pos_end_s         <= (others => '0');
       run_move_s        <= '0';
+      ack_s             <= '0';
+      mask_irq_s        <= '0';
 
       reg_pos_pres_s    <= POS_MID;
 
@@ -316,14 +281,14 @@ begin
             dir_s                    <= avl_writedata_i(1);
             en_pap_from_hps_s        <= avl_writedata_i(0);
 
-          when 8 => run_cal_s      <= avl_writedata_i(0);
-            run_init_s               <= avl_writedata_i(1);
+          when 8  => run_cal_init_s <= avl_writedata_i(0);
 
-          when 9      => pos_end_s      <= unsigned(avl_writedata_i(15 downto 0));
+          when 9  => pos_end_s      <= unsigned(avl_writedata_i(15 downto 0));
 
-          when 10     => run_move_s    <= avl_writedata_i(0);
+          when 10 => run_move_s    <= avl_writedata_i(0);
 
-          when 11     => ack_s         <= avl_writedata_i(0);
+          when 11 => ack_s         <= avl_writedata_i(0);
+            mask_irq_s               <= avl_writedata_i(1);
 
           when others => null;
         end case;
@@ -334,18 +299,37 @@ begin
   end process write_channel;
   -------------------------------------------------------------------------------------------------------------------------------
 
+  -- Turn table sync part for mss------------------------------------------------------------------------------------------------
+  sync : process (avl_clk_i, avl_reset_i)
+  begin
+    if avl_reset_i = '1' then
+      cur_state_cal_s      <= WAITING;
+
+      cur_state_req_move_s <= WAITING;
+
+      cur_state_irq_s      <= NO_IRQ;
+
+    elsif rising_edge(avl_clk_i) then
+      cur_state_cal_s      <= fut_state_cal_s;
+
+      cur_state_req_move_s <= fut_state_req_mov_s;
+
+      cur_state_irq_s      <= fut_state_irq_s;
+    end if;
+  end process;
+  -------------------------------------------------------------------------------------------------------------------------------
+
   -- MSS for calibration and init part ------------------------------------------------------------------------------------------
-  cal_mss : process (cur_state_cal_s, run_cal_s, run_init_s, t_capt_sup_i, t_idx_i, end_move_s)
+  cal_mss : process (cur_state_cal_s, run_cal_init_s, t_capt_sup_i, t_idx_i, end_move_s)
   begin
     -- Default value
     cal_init_busy_s <= '0';
-    mem_pos_cal_s   <= '0';
     fut_state_cal_s <= WAITING;
 
     case cur_state_cal_s is
       when WAITING =>
         cal_init_busy_s <= '0';
-        if run_cal_s = '1' or run_init_s = '1' then
+        if run_cal_init_s = '1' then
           fut_state_cal_s <= CAPT_SUP;
         end if;
 
@@ -365,11 +349,10 @@ begin
 
       when GET_INIT_POS =>
         cal_init_busy_s <= '1';
-        mem_pos_cal_s   <= '1';
         fut_state_cal_s <= WAIT_FOR_CAL_STOP;
 
       when WAIT_FOR_CAL_STOP =>
-        if run_cal_s = '0' and run_init_s = '0' then
+        if run_cal_init_s = '0' then
           fut_state_cal_s      <= WAITING;
         else fut_state_cal_s <= WAIT_FOR_CAL_STOP;
         end if;
@@ -390,7 +373,6 @@ begin
   begin
     -- Default value
     move_busy_s         <= '0';
-    calculate_pos_end_s <= '0';
     fut_state_req_mov_s <= WAITING;
 
     case cur_state_req_move_s is
@@ -413,6 +395,11 @@ begin
     end case;
 
   end process req_mov_mss;
+  -------------------------------------------------------------------------------------------------------------------------------
+
+  -- Interface for irq mss ------------------------------------------------------------------------------------------------------
+  lim_min_s <= '1' when reg_pos_pres_s <= POS_MIN else '0';
+  lim_max_s <= '1' when reg_pos_pres_s >= POS_MAX else '0';
   -------------------------------------------------------------------------------------------------------------------------------
 
   -- MSS for irq handling -------------------------------------------------------------------------------------------------------
@@ -473,11 +460,6 @@ begin
   end process irq_mss;
   -------------------------------------------------------------------------------------------------------------------------------
 
-  -- Interface for irq mss ------------------------------------------------------------------------------------------------------
-  lim_min_s <= '1' when reg_pos_pres_s <= POS_MIN else '0';
-  lim_max_s           <= '1' when reg_pos_pres_s >= POS_MAX else '0';
-  -------------------------------------------------------------------------------------------------------------------------------
-
   -- Interface management
   -- I/O
   led_o               <= led_s;
@@ -490,7 +472,7 @@ begin
   -- Avalon
   avl_readdata_o      <= avl_readdata_s;
   avl_readdatavalid_o <= avl_readdatavalid_s;
-  avl_irq_o           <= avl_irq_s;
+  avl_irq_o           <= '0' when mask_irq_s = '1' else avl_irq_s;
   -- Turnnig table
   t_position_o        <= std_logic_vector(reg_pos_pres_s);
   t_dir_pap_o         <= dir_s;
