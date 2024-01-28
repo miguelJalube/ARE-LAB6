@@ -50,11 +50,11 @@ position de la table depuis la partie FPGA.
 ## Conception de l'interface
 
 ### Schema bloc
-<img src="images/bloc_diagram.png">
+<img src="images/bloc_diagram.png" width="600">
 
 ### Plan d'adressage
 Le plan d'adressage est le suivant :
-<img src="images/plan_adressage.jpg">
+<img src="images/plan_adressage.jpg" width="600">
 
 Les adresses disponibles pour les nouvelles fonctionnalités ont été utilisées comme suit :
 
@@ -67,66 +67,66 @@ Les adresses disponibles pour les nouvelles fonctionnalités ont été utilisée
 
 ## Canal d'écriture
 
-<img src="images/write_channel.jpg">
+<img src="images/write_channel.jpg" width="600">
 
 ## Canal de lecture
 
-<img src="images/read_channel.jpg">
+<img src="images/read_channel.jpg" width="600">
 
 ## Générateur de top
 
-<img src="images/top_gen.jpg">
+<img src="images/top_gen.jpg" width="600">
 
 ### Voici les mesures à l'oscilloscope pour les différentes vitesses de la table tournante (les périodes sont doublées) :
 
 **5 Hz / Viteese petite**
-<img src="images/5Hz.jpg">
+<img src="images/5Hz.jpg" width="600">
 
 **12.5 Hz / Vitesse moyenne**
-<img src="images/12_5Hz.jpg">
+<img src="images/12_5Hz.jpg" width="600">
 
 **25 Hz / Vitesse grande**
-<img src="images/25Hz.jpg">
+<img src="images/25Hz.jpg" width="600">
 
 **50 Hz / Vitesse très grande**
-<img src="images/50Hz.jpg">
+<img src="images/50Hz.jpg" width="600">
 
 ## Diviseur de frequence
 
-<img src="images/freq_divisor.jpg">
+<img src="images/freq_divisor.jpg" width="600">
 
 ## Masquage des IRQ et commande moteur
 
-<img src="images/irq_pap.jpg">
+<img src="images/irq_pap.jpg" width="600">
 
 ## Machine d'état
 
 La solution proposée pour le laboratoire utilise 3 machines d'état.
 
-<img src="images/mss.jpg">
+<img src="images/mss.jpg" width="600">
 
 ### Machine d'état pour la calibration/initialisation
 
-<img src="images/calib_mss.png">
+<img src="images/calib_mss.png" width="600">
 
 ### Machine d'état pour le déplacement
 
-<img src="images/move_mss.png">
+<img src="images/move_mss.png" width="600">
 
 ### Machine d'état pour les IRQ
 
-<img src="images/irq_mss.png">
+<img src="images/irq_mss.png" width="600">
 
 ### UART
 L'UART requiert certains paramètres pour fonctionner correctement. Voici les paramètres utilisés pour ce laboratoire :
 
 1. Baudrate: Le baudrate doit être défini à 9600. Pour calculer les valeurs de Divisor Latch Low (DLL) et Divisor Latch High (DLH), vous pouvez utiliser la formule fournie dans la documentation : 
 
-<img src="images/baud_rate.png">
+<img src="images/baud_rate.png" width="200">
 
 ​Puisque l'horloge l4_sp_clk est à 100 MHz, le diviseur à utiliser pour obtenir un baudrate de 9600 est : 
 
-<img src="images/divisor.png">
+<img src="images/divisor.png" width="200">
 
 2. Bit de données: Pour définir le nombre de bits de données à 8, vous devrez vous assurer que le bit DLAB (Divisor Latch Access Bit) du registre LCR (Line Control Register) est réglé sur 0 pour désactiver l'accès aux registres du diviseur. Ensuite, configurez les bits de données du registre LCR pour 8 bits.
 
@@ -137,7 +137,7 @@ Activer les buffers FIFO en émission et réception: Activez les FIFO en écriva
 
 ## Synthèse
 
-<img src="images/synthesis.png">
+<img src="images/synthesis.png" width="600">
 
 La synthèse montre que le système tourne avec 825 registres ce qui est beaucoup comparé aux laboratoires précédents. Le professeur a cependant indiqué lors du laboratoire précédent que le nombre de registres compté par quartus n'était pas fiable à 100%.
 
